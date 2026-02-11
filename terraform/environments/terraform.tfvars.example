@@ -1,0 +1,21 @@
+proxmox_api_url   = "https://pve1.example.com:8006"
+proxmox_api_token = "terraform@pve!terraform=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+proxmox_nodes = {
+  "pve1" = { address = "pve1.example.com", nomad_ip = "192.168.1.50" }
+  "pve2" = { address = "pve2.example.com", nomad_ip = "192.168.1.51" }
+  "pve3" = { address = "pve3.example.com", nomad_ip = "192.168.1.52" }
+}
+
+ssh_public_key = "ssh-ed25519 AAAA... guac-party-automation"
+
+mgmt_bridge       = "vmbr0"
+mgmt_gateway      = "192.168.1.1"
+mgmt_subnet_cidr  = "192.168.1.0/24"
+
+sdn_zone_name   = "guestzone"
+sdn_vnet_name   = "guestvnet"
+sdn_subnet_cidr = "10.10.0.0/24"
+sdn_gateway     = "10.10.0.1"
+
+internal_domain = "internal"

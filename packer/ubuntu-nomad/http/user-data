@@ -1,0 +1,27 @@
+#cloud-config
+autoinstall:
+  version: 1
+  locale: en_US.UTF-8
+  keyboard:
+    layout: us
+  identity:
+    hostname: ubuntu-template
+    username: ubuntu
+    password: "$6$rounds=4096$saltsalt$Uf0k.LU6v8q3G2jFVxO9MZlO9.0WVWhVGqTVCXBM3IB7y1KdGflsBRz4FMlLRsQbB3N1CX1t2LOgRjDXjKat."
+  ssh:
+    install-server: true
+    allow-pw: true
+  storage:
+    layout:
+      name: lvm
+      sizing-policy: all
+  packages:
+    - qemu-guest-agent
+    - ca-certificates
+    - curl
+    - gnupg
+    - lsb-release
+  late-commands:
+    - "systemctl enable qemu-guest-agent --root=/target"
+  user-data:
+    disable_root: true
