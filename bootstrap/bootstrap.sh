@@ -88,7 +88,7 @@ echo "OK: terraform.tfvars written."
 # Step 8: Generate .env for Docker wrappers
 cat > "${PROJECT_ROOT}/.env" <<EOF
 PVE_NODES=${PVE_NODES}
-PVE_API_URL=https://${FIRST_NODE}:8006
+PVE_API_URL=https://${FIRST_NODE}:8006/api2/json
 PVE_API_TOKEN_ID=${PVE_API_TOKEN_ID}
 PVE_API_TOKEN_SECRET=${PVE_API_TOKEN_SECRET}
 SDN_ZONE_NAME=${SDN_ZONE_NAME}

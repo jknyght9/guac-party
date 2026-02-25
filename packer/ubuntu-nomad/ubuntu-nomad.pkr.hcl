@@ -8,18 +8,26 @@ packer {
 }
 
 source "proxmox-iso" "ubuntu-nomad" {
+  username                 = var.proxmox_api_token_id
   proxmox_url              = var.proxmox_api_url
-  token                    = "${var.proxmox_api_token_id}=${var.proxmox_api_token_secret}"
-  insecure_skip_tls_verify = true
+  token                    = var.proxmox_api_token_secret
   node                     = var.proxmox_node
-
+  insecure_skip_tls_verify = true
+  
   vm_id   = var.vm_id
   vm_name = var.vm_name
 
-  iso_url          = var.iso_url
-  iso_checksum     = var.iso_checksum
-  iso_storage_pool = var.iso_storage_pool
-  unmount_iso      = true
+  boot_iso {
+    type         = "scsi"
+    iso_file     = var.iso_local
+    iso_checksum = var.iso_checksum
+    unmount      = true
+  }
+
+  #iso_url          = var.iso_url
+  #iso_checksum     = var.iso_checksum
+  #iso_storage_pool = var.iso_storage_pool
+  #unmount_iso      = true
 
   os       = "l26"
   cores    = var.vm_cores
@@ -31,11 +39,12 @@ source "proxmox-iso" "ubuntu-nomad" {
   scsi_controller = "virtio-scsi-single"
 
   disks {
-    type         = "scsi"
+    type         = "virtio"
+    discard      = true
     disk_size    = var.vm_disk_size
     storage_pool = var.vm_storage_pool
     format       = "raw"
-    iothread     = true
+    io_thread     = true
   }
 
   efi_config {
@@ -50,6 +59,7 @@ source "proxmox-iso" "ubuntu-nomad" {
   }
 
   cloud_init              = true
+  cloud_init_disk_type    = "scsi"
   cloud_init_storage_pool = var.vm_storage_pool
 
   boot_command = [
@@ -62,6 +72,7 @@ source "proxmox-iso" "ubuntu-nomad" {
 
   http_directory = "http"
 
+  qemu_agent = true
   ssh_username = var.ssh_username
   ssh_password = var.ssh_password
   ssh_timeout  = "20m"
