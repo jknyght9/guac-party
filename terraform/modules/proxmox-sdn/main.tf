@@ -6,26 +6,26 @@ terraform {
   }
 }
 
-resource "proxmox_virtual_environment_sdn_zone" "zone" {
-  zone = var.zone_name
-  type = "simple"
+resource "proxmox_virtual_environment_sdn_zone_simple" "zone" {
+  id = var.zone_name
 }
 
 resource "proxmox_virtual_environment_sdn_vnet" "vnet" {
-  vnet = var.vnet_name
-  zone = proxmox_virtual_environment_sdn_zone.zone.zone
+  id = var.vnet_name
+  zone = proxmox_virtual_environment_sdn_zone_simple.zone.id
+
+  depends_on = [proxmox_virtual_environment_sdn_applier.apply]
 }
 
 resource "proxmox_virtual_environment_sdn_subnet" "subnet" {
-  subnet = var.subnet_cidr
-  vnet   = proxmox_virtual_environment_sdn_vnet.vnet.vnet
+  cidr = var.subnet_cidr
+  vnet   = proxmox_virtual_environment_sdn_vnet.vnet.id
 
   gateway = var.gateway
   snat    = false
+
+  depends_on = [proxmox_virtual_environment_sdn_applier.apply]
 }
 
 resource "proxmox_virtual_environment_sdn_applier" "apply" {
-  depends_on = [
-    proxmox_virtual_environment_sdn_subnet.subnet,
-  ]
 }

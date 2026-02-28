@@ -21,3 +21,4 @@ packer/.packer.d
 Thumbs.db
 .vscode/launch.json
 packer/ubuntu-nomad/crash.log
+terraform/.terraform.tfstate.lock.info

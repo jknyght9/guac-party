@@ -26,6 +26,7 @@ done
 exec docker run --rm -it \
   -v "${PROJECT_ROOT}:/workspace" \
   -w /workspace/terraform \
+  --network host \
   "${ENV_ARGS[@]}" \
   hashicorp/terraform:1.9 \
   "$@"
