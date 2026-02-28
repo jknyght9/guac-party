@@ -34,7 +34,6 @@ source "proxmox-iso" "ubuntu-nomad" {
   memory   = var.vm_memory
   cpu_type = "host"
   machine  = "q35"
-  bios     = "ovmf"
 
   scsi_controller = "virtio-scsi-single"
 
@@ -44,13 +43,7 @@ source "proxmox-iso" "ubuntu-nomad" {
     disk_size    = var.vm_disk_size
     storage_pool = var.vm_storage_pool
     format       = "raw"
-    io_thread     = true
-  }
-
-  efi_config {
-    efi_storage_pool  = var.vm_storage_pool
-    efi_type          = "4m"
-    pre_enrolled_keys = false
+    io_thread    = true
   }
 
   network_adapters {

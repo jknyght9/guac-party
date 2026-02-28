@@ -17,7 +17,7 @@ variable "proxmox_api_token_secret" {
 variable "proxmox_node" {
   type        = string
   description = "Proxmox node to build the template on"
-  default     = ""
+  default     = env("PVE_PRIMARY_NODE")
 }
 
 variable "iso_url" {
