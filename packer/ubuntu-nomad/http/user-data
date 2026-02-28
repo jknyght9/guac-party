@@ -7,7 +7,7 @@ autoinstall:
   identity:
     hostname: ubuntu-template
     username: ubuntu
-    password: "$6$rounds=4096$saltsalt$Uf0k.LU6v8q3G2jFVxO9MZlO9.0WVWhVGqTVCXBM3IB7y1KdGflsBRz4FMlLRsQbB3N1CX1t2LOgRjDXjKat."
+    password: $6$yuW2OT/A13Bx81hA$ETdLMBmzYDgROciv/35uNTO2hHSZyA26VqLMJVJ4dgByqdVFacPRiyGiA7gr.g58cV0z1F1yeb6buHHOZgrKC1 #"$6$rounds=4096$saltsalt$Uf0k.LU6v8q3G2jFVxO9MZlO9.0WVWhVGqTVCXBM3IB7y1KdGflsBRz4FMlLRsQbB3N1CX1t2LOgRjDXjKat."
   ssh:
     install-server: true
     allow-pw: true
@@ -23,5 +23,9 @@ autoinstall:
     - lsb-release
   late-commands:
     - "systemctl enable qemu-guest-agent --root=/target"
+    - "systemctl enable ssh --root=/target"
+    # Allow ubuntu user to run passwordless sudo. This fixes issues with final packer scripts when terminal not available
+    - "echo 'ubuntu ALL=(ALL) NOPASSWD:ALL' > /target/etc/sudoers.d/packer"
+    - "chmod 440 /target/etc/sudoers.d/packer"
   user-data:
     disable_root: true

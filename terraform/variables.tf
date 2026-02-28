@@ -17,6 +17,12 @@ variable "proxmox_nodes" {
   description = "Map of Proxmox node name -> {address, nomad_ip}"
 }
 
+
+variable "proxmox_primary_node" {
+  type = string
+  description = "Primary node hostname, i.e. pve0"
+}
+
 variable "ssh_public_key" {
   type        = string
   description = "SSH public key for Nomad VM access"

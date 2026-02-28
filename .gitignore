@@ -15,7 +15,10 @@ terraform/.terraform.lock.hcl
 # Packer
 packer/ubuntu-nomad/output-*
 packer/ubuntu-nomad/packer_cache/
-
+packer/.packer.d
 # OS
 .DS_Store
 Thumbs.db
+.vscode/launch.json
+packer/ubuntu-nomad/crash.log
+terraform/.terraform.tfstate.lock.info

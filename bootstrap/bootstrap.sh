@@ -64,7 +64,8 @@ done
 NODES_MAP+="}"
 
 cat > "${PROJECT_ROOT}/terraform/terraform.tfvars" <<EOF
-proxmox_api_url    = "https://${FIRST_NODE}:8006"
+proxmox_primary_node = "${PVE_PRIMARY_NODE}"
+proxmox_api_url    = "https://${FIRST_NODE}:8006/api2/json"
 proxmox_api_token  = "${PVE_API_TOKEN_ID}=${PVE_API_TOKEN_SECRET}"
 
 proxmox_nodes = ${NODES_MAP}
@@ -87,8 +88,9 @@ echo "OK: terraform.tfvars written."
 
 # Step 8: Generate .env for Docker wrappers
 cat > "${PROJECT_ROOT}/.env" <<EOF
+PVE_PRIMARY_NODE=${PVE_PRIMARY_NODE}
 PVE_NODES=${PVE_NODES}
-PVE_API_URL=https://${FIRST_NODE}:8006
+PVE_API_URL=https://${FIRST_NODE}:8006/api2/json
 PVE_API_TOKEN_ID=${PVE_API_TOKEN_ID}
 PVE_API_TOKEN_SECRET=${PVE_API_TOKEN_SECRET}
 SDN_ZONE_NAME=${SDN_ZONE_NAME}

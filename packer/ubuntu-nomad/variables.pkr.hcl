@@ -17,22 +17,25 @@ variable "proxmox_api_token_secret" {
 variable "proxmox_node" {
   type        = string
   description = "Proxmox node to build the template on"
-  default     = ""
+  default     = env("PVE_PRIMARY_NODE")
 }
 
 variable "iso_url" {
   type    = string
   default = "https://cloud-images.ubuntu.com/releases/24.04/release/ubuntu-24.04-live-server-amd64.iso"
 }
-
+variable "iso_local" {
+  type    = string
+  default = "nfs-tnhs-isostore:iso/ubuntu-24.04.4-live-server-amd64.iso"
+}
 variable "iso_checksum" {
   type    = string
-  default = "none"
+  default = "sha256:e907d92eeec9df64163a7e454cbc8d7755e8ddc7ed42f99dbc80c40f1a138433"
 }
 
 variable "iso_storage_pool" {
   type    = string
-  default = "local"
+  default = "nfs-tnhs-isostore"
 }
 
 variable "vm_id" {
@@ -47,12 +50,12 @@ variable "vm_name" {
 
 variable "vm_cores" {
   type    = number
-  default = 2
+  default = 4
 }
 
 variable "vm_memory" {
   type    = number
-  default = 2048
+  default = 4096
 }
 
 variable "vm_disk_size" {
@@ -62,12 +65,12 @@ variable "vm_disk_size" {
 
 variable "vm_storage_pool" {
   type    = string
-  default = "local-lvm"
+  default = "ScratchDisk1"
 }
 
 variable "vm_bridge" {
   type    = string
-  default = "vmbr0"
+  default = env("MGMT_BRIDGE")
 }
 
 variable "ssh_username" {

@@ -22,9 +22,16 @@ for var in PVE_API_URL PVE_API_TOKEN_ID PVE_API_TOKEN_SECRET; do
     ENV_ARGS+=(--env "${var}=${!var}")
   fi
 done
+# Create workspace/packer/.packer.d/plugins/ if it does not exist
+if [[ ! -d "${PROJECT_ROOT}/packer/.packer.d/plugins" ]]; then
+  mkdir -p "${PROJECT_ROOT}/packer/.packer.d/plugins"
+fi
+# Specifices where to store the plugins
+ENV_ARGS+=(--env "PACKER_PLUGIN_PATH=/workspace/packer/.packer.d/plugins")
 
 exec docker run --rm -it \
   -v "${PROJECT_ROOT}:/workspace" \
+  --network host \
   -w /workspace/packer/ubuntu-nomad \
   "${ENV_ARGS[@]}" \
   hashicorp/packer:1.11 \
