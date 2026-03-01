@@ -4,36 +4,15 @@
 PVE_TICKET=""
 PVE_CSRF=""
 
-pve_auth() {
-  local node="$1"
-  local user="$2"
-  local password="$3"
 
-  local response
-  response="$(curl -sk --connect-timeout 10 \
-    -d "username=${user}&password=${password}" \
-    "https://${node}:8006/api2/json/access/ticket")"
-
-  PVE_TICKET="$(echo "$response" | grep -o '"ticket":"[^"]*"' | cut -d'"' -f4)"
-  PVE_CSRF="$(echo "$response" | grep -o '"CSRFPreventionToken":"[^"]*"' | cut -d'"' -f4)"
-
-  if [[ -z "$PVE_TICKET" ]]; then
-    echo "ERROR: Authentication failed for ${user} on ${node}."
-    echo "Response: ${response}"
-    return 1
-  fi
-
-  export PVE_TICKET PVE_CSRF
-  echo "OK: Authenticated to ${node} as ${user}."
-}
 
 pve_get() {
   local node="$1"
   local path="$2"
 
-  curl -sk \
-    -b "PVEAuthCookie=${PVE_TICKET}" \
-    "https://${node}:8006${path}"
+  echo $( curl -sk -w "%{http_code}" -H "Authorization: PVEAPIToken=${PVE_API_TOKEN_ID}=${PVE_API_TOKEN_SECRET}" \
+  "https://${node}:8006${path}" )
+
 }
 
 pve_post() {
@@ -47,11 +26,9 @@ pve_post() {
     data_args+=(-d "$d")
   done
 
-  curl -sk \
-    -b "PVEAuthCookie=${PVE_TICKET}" \
-    -H "CSRFPreventionToken: ${PVE_CSRF}" \
+  echo $( curl -sk -w "%{http_code}" -H "Authorization: PVEAPIToken=${PVE_API_TOKEN_ID}=${PVE_API_TOKEN_SECRET}" \
     "${data_args[@]}" \
-    "https://${node}:8006${path}"
+    "https://${node}:8006${path}" )
 }
 
 pve_put() {
@@ -65,19 +42,15 @@ pve_put() {
     data_args+=(-d "$d")
   done
 
-  curl -sk -X PUT \
-    -b "PVEAuthCookie=${PVE_TICKET}" \
-    -H "CSRFPreventionToken: ${PVE_CSRF}" \
+  echo $( curl -sk -X PUT -H "Authorization: PVEAPIToken=${PVE_API_TOKEN_ID}=${PVE_API_TOKEN_SECRET}" \
     "${data_args[@]}" \
-    "https://${node}:8006${path}"
+    "https://${node}:8006${path}" )
 }
 
 pve_delete() {
   local node="$1"
   local path="$2"
 
-  curl -sk -X DELETE \
-    -b "PVEAuthCookie=${PVE_TICKET}" \
-    -H "CSRFPreventionToken: ${PVE_CSRF}" \
-    "https://${node}:8006${path}"
+  echo $( curl -sk -X DELETE -H "Authorization: PVEAPIToken=${PVE_API_TOKEN_ID}=${PVE_API_TOKEN_SECRET}" \
+    "https://${node}:8006${path}" )
 }

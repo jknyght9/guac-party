@@ -17,7 +17,7 @@ variable "proxmox_api_token_secret" {
 variable "proxmox_node" {
   type        = string
   description = "Proxmox node to build the template on"
-  default     = env("PVE_PRIMARY_NODE")
+  default     = env("PVE_FIRST_NODE_NAME")
 }
 
 variable "iso_url" {
@@ -40,7 +40,7 @@ variable "iso_storage_pool" {
 
 variable "vm_id" {
   type    = number
-  default = 9000
+  default = env("NOMAD_TEMPLATE_ID")
 }
 
 variable "vm_name" {

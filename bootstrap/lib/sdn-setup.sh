@@ -11,16 +11,26 @@ setup_sdn() {
   echo "=== Setting up SDN ==="
 
   # Create Simple zone
-  echo "Creating Simple zone: ${zone_name}..."
-  pve_post "$node" "/api2/json/cluster/sdn/zones" \
-    "zone=${zone_name}" \
-    "type=simple" 2>/dev/null || echo "  (zone may already exist)"
+  RESPONSE=$(pve_get "${node}" "/api2/json/cluster/sdn/zones/${zone_name}")
+  if [[ ${RESPONSE: -3} -eq 200 ]]; then
+    echo "Zone ${zone_name} already exists, skipping..."
+  else
+    echo "Creating Simple zone: ${zone_name}..."
+    pve_post "$node" "/api2/json/cluster/sdn/zones" \
+      "zone=${zone_name}" \
+      "type=simple" 2>/dev/null
+  fi
 
   # Create VNet
-  echo "Creating VNet: ${vnet_name} in zone ${zone_name}..."
-  pve_post "$node" "/api2/json/cluster/sdn/vnets" \
-    "vnet=${vnet_name}" \
-    "zone=${zone_name}" 2>/dev/null || echo "  (vnet may already exist)"
+  RESPONSE=$(pve_get "${node}" "/api2/json/cluster/sdn/vnets/${vnet_name}")
+  if [[ ${RESPONSE: -3} -eq 200 ]]; then
+    echo "VNet ${vnet_name} already exists, skipping..."
+  else
+    echo "Creating VNet: ${vnet_name} in zone ${zone_name}..."
+    pve_post "$node" "/api2/json/cluster/sdn/vnets" \
+      "vnet=${vnet_name}" \
+      "zone=${zone_name}"
+  fi
 
   # Create subnet
   # URL-encode the CIDR (/ -> %2F) for the subnet ID
