@@ -15,31 +15,60 @@ source "${SCRIPT_DIR}/lib/ssh-keygen.sh"
 source "${SCRIPT_DIR}/lib/user-setup.sh"
 source "${SCRIPT_DIR}/lib/sdn-setup.sh"
 
+# Source any existing variables
+source "${PROJECT_ROOT}/.env"
+
 echo "============================================"
 echo "  Guac-Party Bootstrap"
 echo "  HA Apache Guacamole on Proxmox via Nomad"
 echo "============================================"
 echo ""
 
-# Step 1: Collect configuration
-prompt_cluster_info
+# Get inital cluster information
+prompt_nodeIP_list
+prompt_hostname_list
 
 # Step 2: Pre-flight checks
 IFS=',' read -ra NODE_ARRAY <<< "$PVE_NODES"
 FIRST_NODE="$(echo "${NODE_ARRAY[0]}" | xargs)"
-run_preflight "$PVE_NODES"
+
+IFS=',' read -ra HOST_ARRAY <<< "$PVE_HOSTNAMES"
+PVE_FIRST_NODE_NAME="$(echo "${HOST_ARRAY[0]}" | xargs)"
+
+#run_preflight "$PVE_NODES"
+
+
+# If a token does not exist ask user for root credentials
+if [[ -z $PVE_API_TOKEN_ID ]]; then
+  prompt_root_credentials
+else
+  echo "Found existing token, attempting to authenticate..."
+  # Get the version as a test of our token
+  RESPONSE="$(pve_get "$FIRST_NODE" "/api2/json/version")"
+
+  # Trim data from the return code {"data":null}XXX
+  STATUS="${RESPONSE: -3}"
+
+  # If we do not authenticate successfully create our automation user
+  if [[ $STATUS -ne 200 ]]; then
+    echo "Authentication failed, generating new tickets..."
+    echo "If you already have an automation user, please delete it!"
+    prompt_root_credentials
+  else
+    echo "Authentication successful!"
+  fi
+fi
+
 
 # Step 3: Generate SSH key pair
 generate_ssh_key "$SECRETS_DIR"
 
-# Step 4: Authenticate to Proxmox
-pve_auth "$FIRST_NODE" "$PVE_ROOT_USER" "$PVE_ROOT_PASSWORD"
-
-# Step 5: Create automation user and API token
-setup_proxmox_user "$FIRST_NODE" "$PVE_AUTO_USER" "$SECRETS_DIR"
-
 # Step 6: Setup SDN
+prompt_sdn_info
 setup_sdn "$FIRST_NODE" "$SDN_ZONE_NAME" "$SDN_VNET_NAME" "$SDN_SUBNET_CIDR" "$SDN_GATEWAY"
+
+# Step X: Gather MGMT net info
+prompt_mgmt_info
 
 # Step 7: Generate terraform.tfvars
 echo "=== Generating terraform.tfvars ==="
@@ -59,12 +88,12 @@ for i in $(seq 0 $(( PVE_NODE_COUNT - 1 ))); do
   # Extract short hostname (before first dot)
   short_name="${node_name%%.*}"
   [[ $i -gt 0 ]] && NODES_MAP+=", "
-  NODES_MAP+="\"${short_name}\" = { address = \"${node_name}\", nomad_ip = \"${NOMAD_IPS[$i]}\" }"
+  NODES_MAP+="\"$(echo "${HOST_ARRAY[$i]}" | xargs)\" = { address = \"${node_name}\", nomad_ip = \"${NOMAD_IPS[$i]}\" }"
 done
 NODES_MAP+="}"
 
 cat > "${PROJECT_ROOT}/terraform/terraform.tfvars" <<EOF
-proxmox_primary_node = "${PVE_PRIMARY_NODE}"
+proxmox_first_node_name = "${PVE_FIRST_NODE_NAME}"
 proxmox_api_url    = "https://${FIRST_NODE}:8006/api2/json"
 proxmox_api_token  = "${PVE_API_TOKEN_ID}=${PVE_API_TOKEN_SECRET}"
 
@@ -88,8 +117,9 @@ echo "OK: terraform.tfvars written."
 
 # Step 8: Generate .env for Docker wrappers
 cat > "${PROJECT_ROOT}/.env" <<EOF
-PVE_PRIMARY_NODE=${PVE_PRIMARY_NODE}
-PVE_NODES=${PVE_NODES}
+PVE_FIRST_NODE_NAME=${PVE_FIRST_NODE_NAME}
+PVE_NODES="${PVE_NODES}"
+PVE_HOSTNAMES="${PVE_HOSTNAMES}"
 PVE_API_URL=https://${FIRST_NODE}:8006/api2/json
 PVE_API_TOKEN_ID=${PVE_API_TOKEN_ID}
 PVE_API_TOKEN_SECRET=${PVE_API_TOKEN_SECRET}
@@ -100,6 +130,7 @@ SDN_GATEWAY=${SDN_GATEWAY}
 MGMT_BRIDGE=${MGMT_BRIDGE}
 MGMT_SUBNET_CIDR=${MGMT_SUBNET_CIDR}
 MGMT_GATEWAY=${MGMT_GATEWAY}
+NOMAD_TEMPLATE_ID=${NOMAD_TEMPLATE_ID}
 NOMAD_IP_START=${NOMAD_IP_START}
 INTERNAL_DOMAIN=${INTERNAL_DOMAIN}
 EOF
@@ -107,10 +138,16 @@ EOF
 echo "OK: .env written."
 
 # Step 9: Build Packer template
-echo ""
-echo "=== Building VM template with Packer ==="
-"${PROJECT_ROOT}/docker/packer.sh" init /workspace/packer/ubuntu-nomad
-"${PROJECT_ROOT}/docker/packer.sh" build /workspace/packer/ubuntu-nomad
+RESPONSE=$(pve_get "$FIRST_NODE" "/api2/json/nodes/${PVE_FIRST_NODE_NAME}/qemu/{$NOMAD_TEMPLATE_ID}/status/current")
+if [[ ${RESPONSE: -3} -ne 200 ]]; then
+  echo ""
+  echo "=== Building VM template with Packer ==="
+  "${PROJECT_ROOT}/docker/packer.sh" init /workspace/packer/ubuntu-nomad
+  "${PROJECT_ROOT}/docker/packer.sh" build /workspace/packer/ubuntu-nomad
+else
+  echo ""
+  echo "Nomad Template ID already found, skipping packer"
+fi
 
 # Step 10: Deploy with Terraform
 echo ""
