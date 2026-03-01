@@ -8,12 +8,12 @@ output "nomad_addr" {
   value       = "http://${values(module.nomad_node)[0].vm_ip}:4646"
 }
 
-output "sdn_zone" {
-  description = "SDN zone name"
-  value       = module.proxmox_sdn.zone_name
-}
+#output "sdn_zone" {
+#  description = "SDN zone name"
+#  value       = module.proxmox_sdn.zone_name
+#}
 
-output "sdn_vnet" {
-  description = "SDN VNet name"
-  value       = module.proxmox_sdn.vnet_name
-}
+#output "sdn_vnet" {
+#  description = "SDN VNet name"
+#  value       = module.proxmox_sdn.vnet_name
+#}

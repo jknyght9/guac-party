@@ -17,8 +17,7 @@ variable "proxmox_nodes" {
   description = "Map of Proxmox node name -> {address, nomad_ip}"
 }
 
-
-variable "proxmox_primary_node" {
+variable "proxmox_first_node_name" {
   type = string
   description = "Primary node hostname, i.e. pve0"
 }

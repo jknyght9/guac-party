@@ -5,21 +5,21 @@ locals {
 }
 
 # SDN zone + VNet + subnet (for guest VMs, out of scope but provisioned)
-module "proxmox_sdn" {
-  source = "./modules/proxmox-sdn"
-
-  zone_name   = var.sdn_zone_name
-  vnet_name   = var.sdn_vnet_name
-  subnet_cidr = var.sdn_subnet_cidr
-  gateway     = var.sdn_gateway
-}
+# module "proxmox_sdn" {
+#  source = "./modules/proxmox-sdn"
+#
+#  zone_name   = var.sdn_zone_name
+#  vnet_name   = var.sdn_vnet_name
+#  subnet_cidr = var.sdn_subnet_cidr
+#  gateway     = var.sdn_gateway
+#}
 
 # One Nomad VM per Proxmox node
 module "nomad_node" {
   source   = "./modules/nomad-node"
   for_each = var.proxmox_nodes
 
-  node_name     = each.key
+  node_name     = "nomad-${each.key}"
   proxmox_node  = each.key
   vm_ip         = each.value.nomad_ip
   vm_gateway    = var.mgmt_gateway
@@ -32,10 +32,10 @@ module "nomad_node" {
   vm_disk_size  = var.vm_disk_size
 
   # Nomad cluster config
-  nomad_node_name    = "nomad-${each.key}"
+  nomad_node_name    = "nomad-${each.key}.${var.internal_domain}"
   nomad_all_ips      = local.all_nomad_ips
   nomad_bootstrap_expect = local.node_count
   internal_domain    = var.internal_domain
 
-  depends_on = [module.proxmox_sdn]
+  #depends_on = [module.proxmox_sdn]
 }
