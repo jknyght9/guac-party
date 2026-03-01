@@ -64,7 +64,7 @@ setup_proxmox_user() {
   # Create role with required privileges
   local privs="VM.Allocate,VM.Clone,VM.Config.CDROM,VM.Config.CPU,VM.Config.Cloudinit"
   privs+=",VM.Config.Disk,VM.Config.HWType,VM.Config.Memory,VM.Config.Network"
-  privs+=",VM.Config.Options,VM.PowerMgmt,VM.Console"
+  privs+=",VM.Config.Options,VM.PowerMgmt,VM.Console,VM.Migrate"
   privs+=",VM.GuestAgent.Audit,VM.Audit"
   privs+=",Datastore.Allocate,Datastore.AllocateSpace,Datastore.AllocateTemplate,Datastore.Audit"
   privs+=",SDN.Allocate,SDN.Audit,SDN.Use"

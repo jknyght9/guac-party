@@ -37,6 +37,7 @@ resource "proxmox_virtual_environment_file" "cloud_init" {
 resource "proxmox_virtual_environment_vm" "nomad" {
   name      = var.nomad_node_name
   node_name = var.proxmox_node
+  vm_id     = var.vm_id
 
   agent {
     enabled = true
@@ -52,8 +53,8 @@ resource "proxmox_virtual_environment_vm" "nomad" {
   }
 
   clone {
-    vm_id = -1
-    node_name = var.proxmox_node
+    vm_id = var.template_id
+    node_name = var.template_node
     full  = true
 
     # Resolve template by name (requires data source or known VM ID)

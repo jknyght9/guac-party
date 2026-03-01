@@ -21,6 +21,9 @@ module "nomad_node" {
 
   node_name     = "nomad-${each.key}"
   proxmox_node  = each.key
+  template_node = var.proxmox_first_node_name
+  template_id   = 9000
+  vm_id         = 9001 + index(local.node_names, each.key) 
   vm_ip         = each.value.nomad_ip
   vm_gateway    = var.mgmt_gateway
   vm_bridge     = var.mgmt_bridge

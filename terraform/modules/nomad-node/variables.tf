@@ -38,6 +38,10 @@ variable "template_name" {
   description = "Packer-built VM template name"
 }
 
+variable "vm_id" {
+  type = number
+  description = "Virtual machine id"
+}
 variable "vm_cores" {
   type    = number
   default = 4
@@ -51,6 +55,15 @@ variable "vm_memory" {
 variable "vm_disk_size" {
   type    = number
   default = 50
+}
+
+variable "template_node" {
+  type    = string
+}
+
+variable "template_id" {
+  type    = number
+  default = 9000
 }
 
 variable "nomad_node_name" {
@@ -76,5 +89,5 @@ variable "internal_domain" {
 
 variable "storage_pool" {
   type    = string
-  default = "local-lvm"
+  default = "ScratchDisk1"
 }

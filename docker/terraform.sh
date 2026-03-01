@@ -26,6 +26,7 @@ done
 exec docker run --rm -it \
   -v "${PROJECT_ROOT}:/workspace" \
   -w /workspace/terraform \
+  -v $SSH_AUTH_SOCK:/ssh-agent -e SSH_AUTH_SOCK=/ssh-agent \
   --network host \
   "${ENV_ARGS[@]}" \
   hashicorp/terraform:1.9 \
