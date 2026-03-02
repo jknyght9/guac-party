@@ -2,6 +2,10 @@ locals {
   node_names = keys(var.proxmox_nodes)
   node_count = length(local.node_names)
   all_nomad_ips = [for k, v in var.proxmox_nodes : v.nomad_ip]
+
+  # Get master-peer ips
+  nomad_master_ip = local.all_nomad_ips[0]
+  nomad_peer_ips = slice(local.all_nomad_ips, 1, length(local.all_nomad_ips))
 }
 
 # SDN zone + VNet + subnet (for guest VMs, out of scope but provisioned)
@@ -41,4 +45,54 @@ module "nomad_node" {
   internal_domain    = var.internal_domain
 
   #depends_on = [module.proxmox_sdn]
+}
+
+# On the master node peer other nodes, create and start gluster volume
+resource "null_resource" "gluster_master_init" {
+  depends_on = [module.nomad_node]
+
+  # Only trigger when number of nodes changed
+  triggers = {
+    cluster_size = local.node_count
+  }
+
+  provisioner "remote-exec" {
+    inline = flatten([
+      # Peer probe all other nodes
+      [ for ip in local.nomad_peer_ips : "sudo gluster peer probe ${ip}"],
+
+      # Create volume on replicated on every node
+      [
+      "sudo gluster volume create nomad-data replica ${length(local.all_nomad_ips)} ${join(" ", [for ip in local.all_nomad_ips : "${ip}:/srv/gluster/brick0/nomad-data"])}",
+      "sudo gluster volume start nomad-data",
+      ]
+    ])
+  }
+  
+  connection {
+    host = local.nomad_master_ip
+    type = "ssh"
+    user = "ubuntu"
+  }
+}
+
+resource "null_resource" "gluster_mount_all" {
+  depends_on = [ null_resource.gluster_master_init ]
+
+  for_each = var.proxmox_nodes
+
+  # Format SDA 50gb disk and auto mount
+  provisioner "remote-exec" {
+    inline = [
+      "sudo mkdir /mnt/nomad-data",
+      "sudo mount -t glusterfs ${each.value.nomad_ip}:/nomad-data /mnt/nomad-data",
+      "sudo sh -c 'echo \"${each.value.nomad_ip}:/nomad-data /mnt/nomad-data glusterfs defaults,_netdev 0 0\" >> /etc/fstab'",
+    ]
+
+    connection {
+      type = "ssh"
+      user = "ubuntu"
+      host = each.value.nomad_ip
+    }
+  }
 }

@@ -92,4 +92,15 @@ build {
       "sudo sync"
     ]
   }
+
+  # Install gluster 
+  provisioner "shell" {
+    inline = [
+      "echo '[+] Installing GlusterFS'",
+      "sudo apt-get update",
+      "sudo apt-get install glusterfs-server -y",
+      "sudo systemctl start glusterd",
+      "sudo systemctl enable glusterd",
+    ]
+  }
 }

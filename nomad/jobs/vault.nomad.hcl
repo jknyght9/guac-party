@@ -11,6 +11,7 @@ job "vault" {
     }
 
     network {
+      mode = "host"
       port "api" {
         static = 8200
       }
@@ -30,10 +31,10 @@ job "vault" {
       config {
         image = "hashicorp/vault:1.17"
         ports = ["api", "cluster"]
-
-        cap_add = ["IPC_LOCK"]
-
-        args = ["server"]
+        privileged   = true 
+        #allow_caps = ["IPC_LOCK"]
+      #  volumes = [ "/opt/volumes/vault:/vault/data"]
+        args = ["server", "-config=/local/vault.hcl"]
       }
 
       volume_mount {
@@ -70,6 +71,8 @@ job "vault" {
 
       env {
         VAULT_LOCAL_CONFIG = ""
+        SKIP_CHOWN = "true"
+        VAULT_ADDR = "https://127.0.0.1:8200"
       }
 
       resources {

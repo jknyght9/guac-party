@@ -91,5 +91,23 @@ resource "proxmox_virtual_environment_vm" "nomad" {
     ]
   }
 
+
+  # Format SDA 50gb disk and auto mount
+  provisioner "remote-exec" {
+    inline = [
+      "sudo mkfs.xfs -f /dev/sda",
+      "sudo mkdir -p /srv/gluster/brick0",
+      "sudo mount /dev/sda /srv/gluster/brick0",
+      "sudo sh -c 'echo \"/dev/sda /srv/gluster/brick0 xfs defaults 0 0\" >> /etc/fstab'",
+      "sudo mkdir -p /srv/gluster/brick0/nomad-data",
+    ]
+
+    connection {
+      type = "ssh"
+      user = "ubuntu"
+      host = var.vm_ip
+    }
+  }
+
   tags = ["nomad", "guac-party"]
 }

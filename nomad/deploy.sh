@@ -6,7 +6,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-JOBS_DIR="${SCRIPT_DIR}/jobs"
+JOBS_DIR="/workspace/nomad/jobs"
 NOMAD="${PROJECT_ROOT}/docker/nomad.sh"
 
 # Colors
