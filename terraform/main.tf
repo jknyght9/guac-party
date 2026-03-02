@@ -65,7 +65,22 @@ resource "null_resource" "gluster_master_init" {
       [
       "sudo gluster volume create nomad-data replica ${length(local.all_nomad_ips)} ${join(" ", [for ip in local.all_nomad_ips : "${ip}:/srv/gluster/brick0/nomad-data"])}",
       "sudo gluster volume start nomad-data",
-      ]
+      ],
+      # Mount on the master node and create fstab
+      [
+      "sudo mkdir /mnt/nomad-data",
+      "sudo mount -t glusterfs ${local.nomad_master_ip}:/nomad-data /mnt/nomad-data",
+      "sudo sh -c 'echo \"${local.nomad_master_ip}:/nomad-data /mnt/nomad-data glusterfs defaults,_netdev 0 0\" >> /etc/fstab'",
+      ],
+      # Create the proprer directory structure
+      "sudo mkdir -p /mnt/nomad-data/containerd",
+      "sudo mkdir -p /mnt/nomad-data/nomad",
+      "sudo mkdir -p /mnt/nomad-data/volumes",
+      "sudo mkdir -p /mnt/nomad-data/volumes/authentik-db",
+      "sudo mkdir -p /mnt/nomad-data/volumes/guacamole-db",
+      "sudo mkdir -p /mnt/nomad-data/volumes/vault",
+      # Open permissions, todo: restrict l8r
+      "sudo chmod -R 1777 /mnt/nomad-data/volumes"
     ])
   }
   
@@ -78,8 +93,11 @@ resource "null_resource" "gluster_master_init" {
 
 resource "null_resource" "gluster_mount_all" {
   depends_on = [ null_resource.gluster_master_init ]
-
-  for_each = var.proxmox_nodes
+  # Run on all nodes except master
+  for_each = {
+    for k, v in var.proxmox_nodes : k => v
+    if v.nomad_ip != local.nomad_master_ip
+  }
 
   # Format SDA 50gb disk and auto mount
   provisioner "remote-exec" {

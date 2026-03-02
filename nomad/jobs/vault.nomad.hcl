@@ -20,10 +20,15 @@ job "vault" {
       }
     }
 
-    volume "vault_data" {
-      type   = "host"
-      source = "vault"
-    }
+  #  volume "vault_data" {
+  #    type   = "host"
+  #    source = "vault"
+  #  }
+
+   # volume_mount {
+   #   volume      = "vault_data"
+   #   destination = "/vault/data"
+   # }
 
     task "vault" {
       driver = "docker"
@@ -33,13 +38,8 @@ job "vault" {
         ports = ["api", "cluster"]
         privileged   = true 
         #allow_caps = ["IPC_LOCK"]
-      #  volumes = [ "/opt/volumes/vault:/vault/data"]
+        volumes = [ "/mnt/nomad-data/volumes/vault:/vault/data"]
         args = ["server", "-config=/local/vault.hcl"]
-      }
-
-      volume_mount {
-        volume      = "vault_data"
-        destination = "/vault/data"
       }
 
       template {
@@ -49,15 +49,8 @@ job "vault" {
           cluster_addr  = "https://{{ env "NOMAD_ADDR_cluster" }}"
           disable_mlock = true
 
-          storage "raft" {
+          storage "file" {
             path    = "/vault/data"
-            node_id = "{{ env "NOMAD_ALLOC_ID" }}"
-
-            {{ range nomadService "vault" }}
-            retry_join {
-              leader_api_addr = "http://{{ .Address }}:{{ .Port }}"
-            }
-            {{ end }}
           }
 
           listener "tcp" {
