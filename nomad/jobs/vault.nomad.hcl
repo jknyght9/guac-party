@@ -34,7 +34,7 @@ job "vault" {
       driver = "docker"
 
       config {
-        image = "hashicorp/vault:1.17"
+        image = "hashicorp/vault:1.21.3"
         ports = ["api", "cluster"]
         privileged   = true 
         #allow_caps = ["IPC_LOCK"]
@@ -65,7 +65,7 @@ job "vault" {
       env {
         VAULT_LOCAL_CONFIG = ""
         SKIP_CHOWN = "true"
-        VAULT_ADDR = "https://127.0.0.1:8200"
+        VAULT_ADDR = "http://127.0.0.1:8200"
       }
 
       resources {

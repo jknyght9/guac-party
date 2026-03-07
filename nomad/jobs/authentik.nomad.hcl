@@ -77,7 +77,7 @@ job "authentik" {
       driver = "docker"
 
       config {
-        image   = "ghcr.io/goauthentik/server:2025.2"
+        image   = "ghcr.io/goauthentik/server:2026.2"
         ports   = ["http"]
         command = "server"
       }
