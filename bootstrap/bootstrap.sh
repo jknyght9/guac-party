@@ -92,7 +92,7 @@ for i in $(seq 0 $(( PVE_NODE_COUNT - 1 ))); do
 done
 NODES_MAP+="}"
 
-cat > "${PROJECT_ROOT}/terraform/terraform.tfvars" <<EOF
+cat > "${PROJECT_ROOT}/terraform/global.tfvars" <<EOF
 proxmox_first_node_name = "${PVE_FIRST_NODE_NAME}"
 proxmox_api_url    = "https://${FIRST_NODE}:8006/api2/json"
 proxmox_api_token  = "${PVE_API_TOKEN_ID}=${PVE_API_TOKEN_SECRET}"

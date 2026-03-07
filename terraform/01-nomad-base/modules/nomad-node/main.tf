@@ -94,13 +94,20 @@ resource "proxmox_virtual_environment_vm" "nomad" {
 
   # Format SDA 50gb disk and auto mount
   provisioner "remote-exec" {
-    inline = [
+    inline = flatten([
+      # Format and mount local brick
       "sudo mkfs.xfs -f /dev/sda",
       "sudo mkdir -p /srv/gluster/brick0",
       "sudo mount /dev/sda /srv/gluster/brick0",
       "sudo sh -c 'echo \"/dev/sda /srv/gluster/brick0 xfs defaults 0 0\" >> /etc/fstab'",
-      "sudo mkdir -p /srv/gluster/brick0/nomad-data",
-    ]
+      "sudo mkdir -p /srv/gluster/brick0/",
+      # Inject cluster DNS into /etc/hosts
+      # We use grep to ensure we don't duplicate lines if the provisioner runs twice
+      [
+        for entry in var.cluster_host_entries : 
+        "grep -q '${entry}' /etc/hosts || echo '${entry}' | sudo tee -a /etc/hosts"
+      ]
+    ])
 
     connection {
       type = "ssh"

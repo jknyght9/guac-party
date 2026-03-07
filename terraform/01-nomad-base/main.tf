@@ -6,6 +6,10 @@ locals {
   # Get master-peer ips
   nomad_master_ip = local.all_nomad_ips[0]
   nomad_peer_ips = slice(local.all_nomad_ips, 1, length(local.all_nomad_ips))
+  # DNS entries that will go into each nodes /etc/hosts
+  host_entires = [
+    for k, v in var.proxmox_nodes: "${v.nomad_ip} nomad-${k}.${var.internal_domain} nomad-${k}"
+  ]
 }
 
 # SDN zone + VNet + subnet (for guest VMs, out of scope but provisioned)
@@ -43,7 +47,7 @@ module "nomad_node" {
   nomad_all_ips      = local.all_nomad_ips
   nomad_bootstrap_expect = local.node_count
   internal_domain    = var.internal_domain
-
+  cluster_host_entries = local.host_entires
   #depends_on = [module.proxmox_sdn]
 }
 
@@ -58,11 +62,24 @@ resource "null_resource" "gluster_master_init" {
 
   provisioner "remote-exec" {
     inline = flatten([
+      # --- Debugging block ---
+      "echo '====================================='",
+      "echo '1. CHECKING REMOTE ENVIRONMENT:'",
+      "env",
+      "echo '====================================='",
+      "echo '2. CHECKING RENDERED TERRAFORM VARS:'",
+      "echo 'Master IP: ${local.nomad_master_ip}'",
+      "echo 'Peer IPs:  ${join(", ", local.nomad_peer_ips)}'",
+      "echo 'All IPs:   ${join(", ", local.all_nomad_ips)}'",
+      "echo '====================================='",
+      # -----------------------      
+
       # Peer probe all other nodes
       [ for ip in local.nomad_peer_ips : "sudo gluster peer probe ${ip}"],
 
       # Create volume on replicated on every node
       [
+      "echo '${length(local.all_nomad_ips)} ${join(" ", [for ip in local.all_nomad_ips : "${ip}:/srv/gluster/brick0/nomad-data"])}'",
       "sudo gluster volume create nomad-data replica ${length(local.all_nomad_ips)} ${join(" ", [for ip in local.all_nomad_ips : "${ip}:/srv/gluster/brick0/nomad-data"])}",
       "sudo gluster volume start nomad-data",
       ],

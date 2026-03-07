@@ -91,3 +91,8 @@ variable "storage_pool" {
   type    = string
   default = "ScratchDisk1"
 }
+
+variable "cluster_host_entries" {
+  type    = list(string)
+  description = "A formatted list of nomad ips and their domain names. To be put in /etc/hosts"
+}
