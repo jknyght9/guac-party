@@ -61,19 +61,7 @@ resource "null_resource" "gluster_master_init" {
   }
 
   provisioner "remote-exec" {
-    inline = flatten([
-      # --- Debugging block ---
-      "echo '====================================='",
-      "echo '1. CHECKING REMOTE ENVIRONMENT:'",
-      "env",
-      "echo '====================================='",
-      "echo '2. CHECKING RENDERED TERRAFORM VARS:'",
-      "echo 'Master IP: ${local.nomad_master_ip}'",
-      "echo 'Peer IPs:  ${join(", ", local.nomad_peer_ips)}'",
-      "echo 'All IPs:   ${join(", ", local.all_nomad_ips)}'",
-      "echo '====================================='",
-      # -----------------------      
-
+    inline = flatten([  
       # Peer probe all other nodes
       [ for ip in local.nomad_peer_ips : "sudo gluster peer probe ${ip}"],
 

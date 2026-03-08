@@ -80,8 +80,15 @@ resource "proxmox_virtual_environment_vm" "nomad" {
       }
     }
 
+    dns {
+      servers = [var.vm_gateway, "1.1.1.1"]
+      domain = var.internal_domain
+    }
+
     user_data_file_id = proxmox_virtual_environment_file.cloud_init.id
   }
+
+
 
   on_boot = true
 
