@@ -85,7 +85,8 @@ resource "null_resource" "gluster_master_init" {
       "sudo mkdir -p /mnt/nomad-data/volumes/guacamole-db",
       "sudo mkdir -p /mnt/nomad-data/volumes/vault",
       # Open permissions, todo: restrict l8r
-      "sudo chmod -R 1777 /mnt/nomad-data/volumes"
+      "sudo chmod -R 1777 /mnt/nomad-data/volumes",
+      "sudo chown -R 100:100 /opt/vault"
     ])
   }
   
