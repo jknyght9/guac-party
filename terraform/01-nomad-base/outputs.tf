@@ -8,6 +8,11 @@ output "nomad_addr" {
   value       = "http://${values(module.nomad_node)[0].vm_ip}:4646"
 }
 
+output "nomad_fqdn_list" {
+  description = "A list of all Nomad domain names"
+  value       = { for k, v in module.nomad_node : k => v.vm_name }
+}
+
 #output "sdn_zone" {
 #  description = "SDN zone name"
 #  value       = module.proxmox_sdn.zone_name

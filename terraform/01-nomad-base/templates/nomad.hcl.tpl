@@ -3,10 +3,12 @@ data_dir   = "/opt/nomad/data"
 name       = "${node_name}"
 bind_addr  = "${bind_addr}"
 
-advertise {
-  http = "${bind_addr}"
-  rpc  = "${bind_addr}"
-  serf = "${bind_addr}"
+# Each nomad node will point internally at its own vault instance
+vault {
+  enabled = true
+  address = "http://${node_name}:8200"
+  task_token_ttl = "1h"
+  token_file = "/etc/nomad.d/vault.token"
 }
 
 server {

@@ -43,7 +43,7 @@ module "nomad_node" {
   vm_disk_size  = var.vm_disk_size
 
   # Nomad cluster config
-  nomad_node_name    = "nomad-${each.key}.${var.internal_domain}"
+  node_fqdn    = "nomad-${each.key}.${var.internal_domain}"
   nomad_all_ips      = local.all_nomad_ips
   nomad_bootstrap_expect = local.node_count
   internal_domain    = var.internal_domain
@@ -86,7 +86,7 @@ resource "null_resource" "gluster_master_init" {
       "sudo mkdir -p /mnt/nomad-data/volumes/vault",
       # Open permissions, todo: restrict l8r
       "sudo chmod -R 1777 /mnt/nomad-data/volumes",
-      "sudo chown -R 100:100 /opt/vault"
+
     ])
   }
   

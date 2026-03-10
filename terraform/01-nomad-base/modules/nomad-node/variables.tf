@@ -66,11 +66,6 @@ variable "template_id" {
   default = 9000
 }
 
-variable "nomad_node_name" {
-  type        = string
-  description = "Nomad agent node name"
-}
-
 variable "nomad_all_ips" {
   type        = list(string)
   description = "All Nomad node IPs for retry_join"
@@ -95,4 +90,9 @@ variable "storage_pool" {
 variable "cluster_host_entries" {
   type    = list(string)
   description = "A formatted list of nomad ips and their domain names. To be put in /etc/hosts"
+}
+
+variable "node_fqdn" {
+  type = string
+  description = "A fully qualified domain name of the nomad node"
 }

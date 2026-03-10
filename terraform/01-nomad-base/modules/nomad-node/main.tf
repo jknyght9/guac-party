@@ -11,11 +11,11 @@ locals {
   prefix_length = split("/", var.subnet_cidr)[1]
 
   cloud_init_config = templatefile("${path.module}/../../templates/cloud-init.yaml.tpl", {
-    hostname           = var.nomad_node_name
+    hostname           = var.node_fqdn
     ssh_public_key     = var.ssh_public_key
     nomad_config       = templatefile("${path.module}/../../templates/nomad.hcl.tpl", {
-      node_name         = var.nomad_node_name
-      bind_addr         = var.vm_ip
+      node_name         = var.node_fqdn
+      bind_addr         = "0.0.0.0"
       bootstrap_expect  = var.nomad_bootstrap_expect
       retry_join        = var.nomad_all_ips
       internal_domain   = var.internal_domain
@@ -30,12 +30,12 @@ resource "proxmox_virtual_environment_file" "cloud_init" {
 
   source_raw {
     data      = local.cloud_init_config
-    file_name = "${var.nomad_node_name}-cloud-init.yaml"
+    file_name = "${var.node_fqdn}-cloud-init.yaml"
   }
 }
 
 resource "proxmox_virtual_environment_vm" "nomad" {
-  name      = var.nomad_node_name
+  name      = var.node_fqdn
   node_name = var.proxmox_node
   vm_id     = var.vm_id
 
@@ -113,7 +113,10 @@ resource "proxmox_virtual_environment_vm" "nomad" {
       [
         for entry in var.cluster_host_entries : 
         "grep -q '${entry}' /etc/hosts || echo '${entry}' | sudo tee -a /etc/hosts"
-      ]
+      ],
+      # Change permission on each volume dir as needed
+      "sudo mkdir -p /opt/vault/data",
+      "sudo chown -R 100:100 /opt/vault"
     ])
 
     connection {

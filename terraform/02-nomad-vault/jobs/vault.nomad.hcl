@@ -19,17 +19,7 @@ job "vault" {
         static = 8201
       }
     }
-
-  #  volume "vault_data" {
-  #    type   = "host"
-  #    source = "vault"
-  #  }
-
-   # volume_mount {
-   #   volume      = "vault_data"
-   #   destination = "/vault/data"
-   # }
-
+    
     task "vault" {
       driver = "docker"
 
@@ -38,7 +28,7 @@ job "vault" {
         ports = ["api", "cluster"]
         privileged   = true 
         #allow_caps = ["IPC_LOCK"]
-        volumes = [ "/mnt/nomad-data/volumes/vault:/vault/data"]
+        volumes = [ "/opt/volumes/vault:/vault/data"]
         args = ["server", "-config=/local/vault.hcl"]
       }
 
