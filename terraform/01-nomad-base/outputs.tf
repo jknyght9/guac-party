@@ -1,16 +1,16 @@
 output "nomad_vm_ips" {
   description = "IP addresses of deployed Nomad VMs"
-  value       = { for k, v in module.nomad_node : k => v.vm_ip }
+  value       = { for k, v in module.nomad_cluster.nodes : k => split("/", v.initialization[0].ip_config[0].ipv4[0].address)[0] }
 }
 
 output "nomad_url" {
   description = "NOMAD_ADDR for the first Nomad node"
-  value       = "http://${values(module.nomad_node)[0].vm_ip}:4646"
+  value       = "http://${split("/", values(module.nomad_cluster.nodes)[0].initialization[0].ip_config[0].ipv4[0].address)[0]}:4646"
 }
 
 output "nomad_fqdn_list" {
   description = "A list of all Nomad domain names"
-  value       = { for k, v in module.nomad_node : k => v.vm_name }
+  value       = { for k, v in module.nomad_cluster.nodes : k => v.name }
 }
 
 #output "sdn_zone" {

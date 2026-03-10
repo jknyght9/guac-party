@@ -1,0 +1,206 @@
+terraform {
+  required_providers {
+    proxmox = {
+      source = "bpg/proxmox"
+    }
+  }
+}
+
+locals {
+    node_names = keys(var.proxmox_nodes)
+    all_ips = [for v in var.proxmox_nodes : v.nomad_ip ]
+    master_ip = local.all_ips[0]
+    peer_ips = slice(local.all_ips, 1, length(local.all_ips))
+
+    prefix_length = split("/", var.subnet_cidr)[1]
+
+    host_entries = [
+        for k, v in var.proxmox_nodes: "${v.nomad_ip} nomad-${k}.${var.internal_domain}"
+    ]
+}
+
+# 1. Define Cloud init
+resource "proxmox_virtual_environment_file" "cloud_init" {
+    for_each = var.proxmox_nodes
+    content_type = "snippets"
+    datastore_id = "local"
+    node_name = each.key
+
+    source_raw {
+        data = templatefile("${path.module}/../../templates/cloud-init.yaml.tpl", {
+            hostname = "nomad-${each.key}.${var.internal_domain}"
+            ssh_public_key = var.ssh_public_key
+            nomad_config = templatefile("${path.module}/../../templates/nomad.hcl.tpl", {
+                node_name = "nomad-${each.key}.${var.internal_domain}"
+                bind_addr = "0.0.0.0"
+                bootstrap_expect = length(local.node_names)
+                retry_join = local.all_ips
+                internal_domain = var.internal_domain
+            })
+        })
+        file_name = "nomad-${each.key}-cloud-init.yaml"
+    }
+}
+
+# 2. Clone all Nomad nodes
+resource "proxmox_virtual_environment_vm" "nomad" {
+    for_each = var.proxmox_nodes
+    name = "nomad-${each.key}.${var.internal_domain}"
+    node_name     = "${each.key}"
+    #proxmox_node  = each.key
+
+    vm_id = 9001 + index(local.node_names, each.key)
+
+    agent { enabled = true }
+
+    cpu {
+        cores = var.vm_cores
+        type = "host"
+    }
+
+    memory { dedicated = var.vm_memory }
+
+    clone {
+        vm_id = var.template_id
+        node_name = var.template_node
+        full = true
+    }
+
+    disk {
+        interface = "scsi0"
+        size = var.vm_disk_size
+        datastore_id = var.storage_pool
+        iothread = true
+    }
+
+    network_device {
+        bridge = var.vm_bridge
+        model = "virtio"
+    }
+
+    initialization {
+        ip_config {
+            ipv4 {
+                address = "${each.value.nomad_ip}/${local.prefix_length}"
+                gateway = var.vm_gateway
+            }
+        }
+        dns {
+            servers = [var.vm_gateway, "1.1.1.1"]
+            domain = var.internal_domain
+        }
+        user_data_file_id = proxmox_virtual_environment_file.cloud_init[each.key].id
+    }
+
+    on_boot = true
+
+    # Per-node provisioning (Local disks & /etc/hosts)
+    provisioner "remote-exec" {
+        inline = flatten([
+            "sudo mkfs.xfs -f /dev/sda",
+            "sudo mkdir -p /srv/gluster/brick0",
+            "sudo mount /dev/sda /srv/gluster/brick0",
+            "sudo sh -c 'echo \"/dev/sda /srv/gluster/brick0 xfs defaults 0 0\" >> /etc/fstab'",
+            "sudo mkdir -p /srv/gluster/brick0/nomad-data",
+            [
+            for entry in local.host_entries :
+            "grep -q '${entry}' /etc/hosts || echo '${entry}' | sudo tee -a /etc/hosts"
+            ],
+            "sudo mkdir -p /opt/vault/data",
+            "sudo chown -R 100:100 /opt/vault"
+        ])
+
+        connection {
+            type = "ssh"
+            user = "ubuntu"
+            host = each.value.nomad_ip
+        }
+    }
+
+    tags = ["nomad", "guac-party"]
+}
+
+# 3. Initialize Gluster Cluster on the Master Node
+resource "null_resource" "gluster_master_init" {
+  depends_on = [proxmox_virtual_environment_vm.nomad]
+
+  triggers = {
+    cluster_ips = join(",", local.all_ips)
+  }
+
+  provisioner "remote-exec" {
+    inline = flatten([
+      # Peer probe all other nodes
+      [for ip in local.peer_ips : "sudo gluster peer probe ${ip}"],
+
+      # Create and start the replicated volume
+      "sudo gluster volume create nomad-data replica ${length(local.all_ips)} ${join(" ", [for ip in local.all_ips : "${ip}:/srv/gluster/brick0/nomad-data"])} force",
+      "sudo gluster volume start nomad-data",
+
+      # Mount locally on master
+      "sudo mkdir -p /mnt/nomad-data",
+      "sudo mount -t glusterfs ${local.master_ip}:/nomad-data /mnt/nomad-data",
+      "sudo sh -c 'echo \"${local.master_ip}:/nomad-data /mnt/nomad-data glusterfs defaults,_netdev 0 0\" >> /etc/fstab'",
+
+      # Directory structure
+      "sudo mkdir -p /mnt/nomad-data/volumes/vault",
+      "sudo chmod -R 1777 /mnt/nomad-data/volumes"
+    ])
+
+    connection {
+      host = local.master_ip
+      type = "ssh"
+      user = "ubuntu"
+    }
+  }
+}
+
+# 4. Mount the volume on all other nodes
+resource "null_resource" "gluster_secondary_mounts" {
+  for_each   = { for k, v in var.proxmox_nodes : k => v if v.nomad_ip != local.master_ip }
+  depends_on = [null_resource.gluster_master_init]
+
+  provisioner "remote-exec" {
+    inline = [
+      "sudo mkdir -p /mnt/nomad-data",
+      "sudo mount -t glusterfs ${each.value.nomad_ip}:/nomad-data /mnt/nomad-data",
+      "sudo sh -c 'echo \"${each.value.nomad_ip}:/nomad-data /mnt/nomad-data glusterfs defaults,_netdev 0 0\" >> /etc/fstab'"
+    ]
+
+    connection {
+      type = "ssh"
+      user = "ubuntu"
+      host = each.value.nomad_ip
+    }
+  }
+}
+
+# 5. Wait for Nomad to start
+resource "null_resource" "nomad_health_check" {
+  depends_on = [null_resource.gluster_secondary_mounts]
+
+  provisioner "remote-exec" {
+    connection {
+      type = "ssh"
+      user = "ubuntu"
+      host = local.master_ip
+    }
+
+    # Curls Nomad API until it gets a 200 OK or times out. Forces Terraform to wait before deploying Vault
+    inline = [
+      "echo 'Starting Nomad health check loop...'",
+      <<-EOT
+      for i in {1..30}; do
+        if curl -s -w "%%{http_code}" -o /dev/null "http://localhost:4646/v1/agent/self" | grep -q "200"; then
+          echo "Nomad API is responding with 200 OK!"
+          exit 0
+        fi
+        echo "Attempt $i: Nomad API not ready. Waiting 5s..."
+        sleep 5
+      done
+      echo "Nomad failed to start within timeout period."
+      exit 1
+      EOT
+    ]
+  }
+}
