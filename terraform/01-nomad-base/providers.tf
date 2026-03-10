@@ -8,3 +8,7 @@ provider "proxmox" {
     username = "root" 
   }
 }
+
+provider "nomad" {
+    address = "http://${values(module.nomad_node)[0].vm_ip}:4646"
+}

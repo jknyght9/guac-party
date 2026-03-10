@@ -7,13 +7,9 @@ terraform {
   }
 }
 
-provider "nomad" {
-    address = local.nomad_address
-}
-
 resource "nomad_job" "vault" {
-    jobspec = templatefile("${path.module}/jobs/vault.nomad.hcl.tpl", {
-        nomad_ips = data.terraform_remote_state.nomad-base.outputs.nomad_vm_ips
+    jobspec = templatefile("${path.root}/templates/vault.nomad.hcl.tpl", {
+        nomad_all_ips   = var.nomad_all_ips
         internal_domain = var.internal_domain
     })
 

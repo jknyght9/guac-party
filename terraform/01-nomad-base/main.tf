@@ -120,3 +120,13 @@ resource "null_resource" "gluster_mount_all" {
     }
   }
 }
+
+module "vault" {
+  # Only deploy vault after gluster is finished
+  depends_on = [null_resource.gluster_mount_all]
+  source = "./modules/vault"
+  
+  # Each vault is tagged as vault.nomad-{hostname}.internal
+  internal_domain = var.internal_domain
+  nomad_all_ips = local.all_nomad_ips
+}

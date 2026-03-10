@@ -19,16 +19,18 @@ job "vault" {
         static = 8201
       }
     }
-    
+
     task "vault" {
       driver = "docker"
 
       config {
         image = "hashicorp/vault:1.21.3"
         ports = ["api", "cluster"]
-        privileged   = true 
-        #allow_caps = ["IPC_LOCK"]
-        volumes = [ "/opt/volumes/vault:/vault/data"]
+        
+        cap_add = ["IPC_LOCK"] 
+        
+        volumes = ["/opt/vault/data:/vault/data"]
+        
         args = ["server", "-config=/local/vault.hcl"]
       }
 
@@ -37,10 +39,23 @@ job "vault" {
           ui            = true
           api_addr      = "http://{{ env "NOMAD_ADDR_api" }}"
           cluster_addr  = "https://{{ env "NOMAD_ADDR_cluster" }}"
-          disable_mlock = true
+          
+          # We keep this true because IPC_LOCK handles it, or you can disable it if testing
+          disable_mlock = true 
 
-          storage "file" {
+          # The Raft Configuration
+          storage "raft" {
             path    = "/vault/data"
+            
+            # Nomad injects the exact host name (e.g., nomad-pve1) here
+            node_id = "{{ env "node.unique.name" }}"
+
+            # Terraform dynamically loops over your IPs to generate these blocks!
+            %{ for ip in nomad_all_ips }
+            retry_join {
+              leader_api_addr = "http://${ip}:8200"
+            }
+            %{ endfor }
           }
 
           listener "tcp" {
@@ -54,8 +69,8 @@ job "vault" {
 
       env {
         VAULT_LOCAL_CONFIG = ""
-        SKIP_CHOWN = "true"
-        VAULT_ADDR = "http://127.0.0.1:8200"
+        SKIP_CHOWN         = "true"
+        VAULT_ADDR         = "http://127.0.0.1:8200"
       }
 
       resources {
@@ -70,10 +85,11 @@ job "vault" {
 
         tags = [
           "traefik.enable=true",
-          "traefik.http.routers.vault.rule=Host(`vault.${var.internal_domain}`)",
-          "traefik.http.routers.vault.tls=true",
+          "traefik.http.routers.vault.rule=Host(`vault.${internal_domain}`)",
+          "traefik.http.routers.vault.tls=true", # Ensure Traefik handles the certs
         ]
 
+        # This health check is for Vault HA
         check {
           type     = "http"
           path     = "/v1/sys/health?standbyok=true&uninitcode=200&sealedcode=200"
@@ -83,9 +99,4 @@ job "vault" {
       }
     }
   }
-}
-
-variable "internal_domain" {
-  type    = string
-  default = "internal"
 }

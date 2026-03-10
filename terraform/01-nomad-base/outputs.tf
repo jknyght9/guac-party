@@ -3,7 +3,7 @@ output "nomad_vm_ips" {
   value       = { for k, v in module.nomad_node : k => v.vm_ip }
 }
 
-output "nomad_addr" {
+output "nomad_url" {
   description = "NOMAD_ADDR for the first Nomad node"
   value       = "http://${values(module.nomad_node)[0].vm_ip}:4646"
 }
