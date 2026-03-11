@@ -30,12 +30,23 @@ resource "proxmox_virtual_environment_file" "cloud_init" {
         data = templatefile("${path.module}/../../templates/cloud-init.yaml.tpl", {
             hostname = "nomad-${each.key}.${var.internal_domain}"
             ssh_public_key = var.ssh_public_key
+            # Nomad configuration
             nomad_config = templatefile("${path.module}/../../templates/nomad.hcl.tpl", {
                 node_name = "nomad-${each.key}.${var.internal_domain}"
                 bind_addr = "0.0.0.0"
                 bootstrap_expect = length(local.node_names)
                 retry_join = local.all_ips
                 internal_domain = var.internal_domain
+            })
+            # Keepalived configuration
+            keepalived_config = templatefile("${path.module}/../../templates/keepalived.conf.tpl", {
+                mgmt_virtual_ip = var.mgmt_virtual_ip
+                mgmt_passwd     = var.mgmt_passwd
+                priority        = (index(local.node_names, each.key) * 20)
+            })
+            # Resolved configuration
+            resolved_config = templatefile("${path.module}/../../templates/resolved.conf.tpl", {
+              vm_gateway = var.vm_gateway
             })
         })
         file_name = "nomad-${each.key}-cloud-init.yaml"
@@ -102,10 +113,12 @@ resource "proxmox_virtual_environment_vm" "nomad" {
             "sudo mount /dev/sda /srv/gluster/brick0",
             "sudo sh -c 'echo \"/dev/sda /srv/gluster/brick0 xfs defaults 0 0\" >> /etc/fstab'",
             "sudo mkdir -p /srv/gluster/brick0/nomad-data",
+            # DNS Controls
             [
             for entry in local.host_entries :
             "grep -q '${entry}' /etc/hosts || echo '${entry}' | sudo tee -a /etc/hosts"
             ],
+            # Create Vault directory and set permissions.
             "sudo mkdir -p /opt/vault/data",
             "sudo chown -R 100:100 /opt/vault"
         ])
@@ -190,8 +203,8 @@ resource "null_resource" "nomad_health_check" {
     inline = [
       "echo 'Starting Nomad health check loop...'",
       <<-EOT
-      for i in {1..30}; do
-        if curl -s -w "%%{http_code}" -o /dev/null "http://localhost:4646/v1/agent/self" | grep -q "200"; then
+      for i in $(seq  1 30); do
+        if [ $(curl -s -w "%%{http_code}" -o /dev/null "http://localhost:4646/v1/agent/self") = "200" ]; then
           echo "Nomad API is responding with 200 OK!"
           exit 0
         fi

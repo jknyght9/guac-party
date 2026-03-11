@@ -17,7 +17,7 @@ server {
 
   server_join {
     retry_join = [%{ for i, ip in retry_join ~}"${ip}"%{ if i < length(retry_join) - 1 ~}, %{ endif ~}%{ endfor ~}]
-  }
+  } 
 }
 
 client {

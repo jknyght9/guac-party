@@ -12,6 +12,11 @@ locals {
   ]
 }
 
+resource "random_password" "keepalived_mgmt_passwd" {
+    length = 18
+    special = true
+    override_special = "!#$%&*()-_=+[]{}<>:?"
+}
 # SDN zone + VNet + subnet (for guest VMs, out of scope but provisioned)
 # module "proxmox_sdn" {
 #  source = "./modules/proxmox-sdn"
@@ -35,6 +40,9 @@ module "nomad_cluster" {
   subnet_cidr = var.subnet_cidr
 
   template_node = var.template_node
+
+  mgmt_virtual_ip = var.mgmt_virtual_ip
+  mgmt_passwd = random_password.keepalived_mgmt_passwd.result
 }
 
 module "vault" {
@@ -45,4 +53,23 @@ module "vault" {
   # Each vault is tagged as vault.nomad-{hostname}.internal
   internal_domain = var.internal_domain
   nomad_all_ips = local.all_nomad_ips
+}
+
+module "traefik" {
+  # Run after Vault, when the Nomad is garunteed to be up
+  depends_on = [ module.nomad_cluster.nomad_health_check ]
+  source = "./modules/traefik"
+
+  internal_domain = var.internal_domain
+}
+
+module "coredns" {
+  # Run after Vault, when the Nomad is garunteed to be up
+  depends_on = [ module.nomad_cluster.nomad_health_check ]
+  source = "./modules/coredns"
+
+  nomad_hosts = local.host_entires
+  internal_domain = var.internal_domain
+  virtual_ip = var.mgmt_virtual_ip
+  mgmt_gateway = var.vm_gateway
 }

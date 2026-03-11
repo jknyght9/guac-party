@@ -2,8 +2,3 @@ variable "internal_domain" {
     description = "Top level domain for cluster"
     type = string
 }
-
-variable "nomad_all_ips" {
-    description = "a map of all nomad ips"
-    type = list(string)
-}

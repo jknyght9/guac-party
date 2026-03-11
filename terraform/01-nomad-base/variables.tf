@@ -56,3 +56,8 @@ variable "internal_domain" {
   default = "internal"
   description = "Top level domain"
 }
+
+variable "mgmt_virtual_ip" {
+    type = string
+    description = "Virtual IP address of the Cluster. The shared ip address with automatic failover"
+}

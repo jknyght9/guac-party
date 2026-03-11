@@ -13,6 +13,9 @@ job "traefik" {
       port "dashboard" {
         static = 8081
       }
+      port "api" {
+        static = 8080
+      }
     }
 
     # Generate self-signed TLS certificate before Traefik starts
@@ -32,8 +35,8 @@ job "traefik" {
             -keyout /alloc/certs/default.key \
             -out /alloc/certs/default.crt \
             -days 3650 -nodes \
-            -subj "/CN=*.${var.internal_domain}" \
-            -addext "subjectAltName=DNS:*.${var.internal_domain},DNS:${var.internal_domain}"
+            -subj "/CN=*.${internal_domain}" \
+            -addext "subjectAltName=DNS:*.${internal_domain},DNS:${internal_domain}"
         SCRIPT
         ]
       }
@@ -114,16 +117,11 @@ job "traefik" {
         check {
           type     = "http"
           path     = "/api/overview"
-          port     = "dashboard"
+          port     = "api"
           interval = "10s"
           timeout  = "3s"
         }
       }
     }
   }
-}
-
-variable "internal_domain" {
-  type    = string
-  default = "internal"
 }

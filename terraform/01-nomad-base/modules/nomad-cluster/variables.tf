@@ -7,6 +7,16 @@ variable "proxmox_nodes" {
   description = "A map of Proxmox node hostnames and ips"
 }
 
+variable "mgmt_virtual_ip" {
+    type = string
+    description = "Virtual IP address of the Cluster. The shared ip address with automatic failover"
+}
+
+variable "mgmt_passwd" {
+    type = string
+    description = "Shared passwd used for the Keepalived management network."
+}
+
 variable "internal_domain" {
   type = string
   description = "Top level domain"
