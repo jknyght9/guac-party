@@ -1,0 +1,391 @@
+{
+  "version": 4,
+  "terraform_version": "1.9.8",
+  "serial": 518,
+  "lineage": "f622f573-9170-ab7f-4fa0-6c14ff6d7288",
+  "outputs": {
+    "nomad_fqdn_list": {
+      "value": {
+        "saruman": "nomad-saruman.internal",
+        "sauron": "nomad-sauron.internal",
+        "smeagol": "nomad-smeagol.internal"
+      },
+      "type": [
+        "object",
+        {
+          "saruman": "string",
+          "sauron": "string",
+          "smeagol": "string"
+        }
+      ]
+    },
+    "nomad_url": {
+      "value": "http://192.168.100.87:4646",
+      "type": "string"
+    },
+    "nomad_vm_ips": {
+      "value": {
+        "saruman": "192.168.100.87",
+        "sauron": "192.168.100.88",
+        "smeagol": "192.168.100.89"
+      },
+      "type": [
+        "object",
+        {
+          "saruman": "string",
+          "sauron": "string",
+          "smeagol": "string"
+        }
+      ]
+    }
+  },
+  "resources": [
+    {
+      "mode": "managed",
+      "type": "random_password",
+      "name": "keepalived_mgmt_passwd",
+      "provider": "provider[\"registry.terraform.io/hashicorp/random\"]",
+      "instances": [
+        {
+          "schema_version": 3,
+          "attributes": {
+            "bcrypt_hash": "$2a$10$SgGs.Q5nnLjSmkRcAsE0ze9N/R/F/RMxMq7fV5vMQRXvJ1ZBzwz/2",
+            "id": "none",
+            "keepers": null,
+            "length": 18,
+            "lower": true,
+            "min_lower": 0,
+            "min_numeric": 0,
+            "min_special": 0,
+            "min_upper": 0,
+            "number": true,
+            "numeric": true,
+            "override_special": "!#$%\u0026*()-_=+[]{}\u003c\u003e:?",
+            "result": "]%#aQLEH5HVj\u003eibMBJ",
+            "special": true,
+            "upper": true
+          },
+          "sensitive_attributes": [
+            [
+              {
+                "type": "get_attr",
+                "value": "bcrypt_hash"
+              }
+            ],
+            [
+              {
+                "type": "get_attr",
+                "value": "result"
+              }
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.nomad_cluster",
+      "mode": "managed",
+      "type": "null_resource",
+      "name": "gluster_master_init",
+      "provider": "provider[\"registry.terraform.io/hashicorp/null\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "id": "7964336734697659227",
+            "triggers": {
+              "cluster_ips": "192.168.100.87,192.168.100.88,192.168.100.89"
+            }
+          },
+          "sensitive_attributes": [],
+          "dependencies": [
+            "module.nomad_cluster.proxmox_virtual_environment_file.cloud_init",
+            "module.nomad_cluster.proxmox_virtual_environment_vm.nomad",
+            "random_password.keepalived_mgmt_passwd"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.nomad_cluster",
+      "mode": "managed",
+      "type": "null_resource",
+      "name": "gluster_secondary_mounts",
+      "provider": "provider[\"registry.terraform.io/hashicorp/null\"]",
+      "instances": [
+        {
+          "index_key": "sauron",
+          "schema_version": 0,
+          "attributes": {
+            "id": "1769618330010192338",
+            "triggers": null
+          },
+          "sensitive_attributes": [],
+          "dependencies": [
+            "module.nomad_cluster.null_resource.gluster_master_init",
+            "module.nomad_cluster.proxmox_virtual_environment_file.cloud_init",
+            "module.nomad_cluster.proxmox_virtual_environment_vm.nomad",
+            "random_password.keepalived_mgmt_passwd"
+          ]
+        },
+        {
+          "index_key": "smeagol",
+          "schema_version": 0,
+          "attributes": {
+            "id": "408551976278258934",
+            "triggers": null
+          },
+          "sensitive_attributes": [],
+          "dependencies": [
+            "module.nomad_cluster.null_resource.gluster_master_init",
+            "module.nomad_cluster.proxmox_virtual_environment_file.cloud_init",
+            "module.nomad_cluster.proxmox_virtual_environment_vm.nomad",
+            "random_password.keepalived_mgmt_passwd"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.nomad_cluster",
+      "mode": "managed",
+      "type": "null_resource",
+      "name": "nomad_health_check",
+      "provider": "provider[\"registry.terraform.io/hashicorp/null\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "id": "3085732616653205651",
+            "triggers": null
+          },
+          "sensitive_attributes": [],
+          "dependencies": [
+            "module.nomad_cluster.null_resource.gluster_master_init",
+            "module.nomad_cluster.null_resource.gluster_secondary_mounts",
+            "module.nomad_cluster.proxmox_virtual_environment_file.cloud_init",
+            "module.nomad_cluster.proxmox_virtual_environment_vm.nomad",
+            "random_password.keepalived_mgmt_passwd"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.nomad_cluster",
+      "mode": "managed",
+      "type": "proxmox_virtual_environment_file",
+      "name": "cloud_init",
+      "provider": "provider[\"registry.terraform.io/bpg/proxmox\"]",
+      "instances": [
+        {
+          "index_key": "saruman",
+          "schema_version": 0,
+          "attributes": {
+            "content_type": "snippets",
+            "datastore_id": "local",
+            "file_mode": null,
+            "file_modification_date": null,
+            "file_name": "nomad-saruman-cloud-init.yaml",
+            "file_size": null,
+            "file_tag": null,
+            "id": "local:snippets/nomad-saruman-cloud-init.yaml",
+            "node_name": "saruman",
+            "overwrite": true,
+            "source_file": [],
+            "source_raw": [
+              {
+                "data": "#cloud-config\nhostname: nomad-saruman.internal\nfqdn: nomad-saruman.internal.localdomain\nmanage_etc_hosts: true\n\nusers:\n  - name: ubuntu\n    shell: /bin/bash\n    sudo: ALL=(ALL) NOPASSWD:ALL\n    ssh_authorized_keys:\n      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMB6Cj1ero7AjVJiaFj+GEiw7zJHWKZFiu/zl3NHIHgd guac-party-automation\n    groups: [docker]\n\nwrite_files:\n  - path: /etc/nomad.d/nomad.hcl\n    permissions: \"0644\"\n    content: |\n      datacenter = \"dc1\"\n      data_dir   = \"/opt/nomad/data\"\n      name       = \"nomad-saruman.internal\"\n      bind_addr  = \"0.0.0.0\"\n      \n      # Each nomad node will point internally at its own vault instance\n      vault {\n        enabled = true\n        address = \"http://nomad-saruman.internal:8200\"\n        task_token_ttl = \"1h\"\n        token_file = \"/etc/nomad.d/vault.token\"\n      }\n      \n      server {\n        enabled          = true\n        bootstrap_expect = 3\n      \n        server_join {\n          retry_join = [\"192.168.100.87\", \"192.168.100.88\", \"192.168.100.89\"]\n        } \n      }\n      \n      client {\n        enabled = true\n      \n        host_volume \"vault\" {\n          path      = \"/opt/volumes/vault\"\n          read_only = false\n        }\n      \n        host_volume \"authentik-db\" {\n          path      = \"/opt/volumes/authentik-db\"\n          read_only = false\n        }\n      \n        host_volume \"guacamole-db\" {\n          path      = \"/opt/volumes/guacamole-db\"\n          read_only = false\n        }\n      }\n      \n      plugin \"docker\" {\n        config {\n          allow_privileged = true\n      \n          volumes {\n            enabled = true\n          }\n      \n          allow_caps = [\n            \"audit_write\", \"chown\", \"dac_override\", \"fowner\", \"fsetid\", \"kill\", \"mknod\", \n            \"net_bind_service\", \"setfcap\", \"setgid\", \"setpcap\", \"setuid\", \"sys_chroot\", \n            \"ipc_lock\"\n          ]\n        }\n      }\n      \n  - path: /etc/keepalived/keepalived.conf\n    permissions: \"0644\"\n    content: |\n      # Template file used by to install keepalived. Note that this file is not tf or hcl.\n      # This is purely Linux config file\n      \n      vrrp_script check_traefik {\n          # This script checks if Traefik is actually responding on port 80\n          script \"/usr/bin/curl -s -f http://localhost:8080/api/rawdata \u003e /dev/null\"\n          interval 2  # Check every 2 seconds\n          weight 20   # If it passes, add 20 to priority\n      }\n      \n      vrrp_instance VI_1 {\n          state BACKUP          # Start as BACKUP on all nodes to let priority decide\n          interface eth0        # Double-check this matches your 'ip addr' (e.g., ens18)\n          virtual_router_id 51  # Must be the same on all 3 nodes\n          priority 0          # Set to 100 on Node 1, 90 on Node 2, 80 on Node 3\n      \n          advert_int 1\n      \n          authentication {\n              auth_type PASS\n              auth_pass ]%#aQLEH5HVj\u003eibMBJ  # Simple password for the nodes to trust each other\n          }\n      \n          virtual_ipaddress {\n              192.168.100.100   # This is your new \"Magic IP\" for DNS\n          }\n      \n          track_script {\n              check_traefik\n          }\n      }\n  - path: /etc/systemd/resolved.conf\n    permissions: \"0644\"\n    content: |\n      [Resolve]\n      DNS=127.0.0.1\n      FallbackDNS=192.168.100.1 1.1.1.1\n      DNSStubListener=no\n\nruncmd:\n  - ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf\n  - systemctl restart nomad\n  - systemctl enable nomad\n  - systemctl restart keepalived\n  - systemctl enabled keepalived\n  - systemctl restart systemd-resolved",
+                "file_name": "nomad-saruman-cloud-init.yaml",
+                "resize": 0
+              }
+            ],
+            "timeout_upload": 1800
+          },
+          "sensitive_attributes": [
+            [
+              {
+                "type": "get_attr",
+                "value": "source_raw"
+              },
+              {
+                "type": "index",
+                "value": {
+                  "value": 0,
+                  "type": "number"
+                }
+              },
+              {
+                "type": "get_attr",
+                "value": "data"
+              }
+            ]
+          ],
+          "private": "bnVsbA==",
+          "dependencies": [
+            "random_password.keepalived_mgmt_passwd"
+          ]
+        },
+        {
+          "index_key": "sauron",
+          "schema_version": 0,
+          "attributes": {
+            "content_type": "snippets",
+            "datastore_id": "local",
+            "file_mode": null,
+            "file_modification_date": null,
+            "file_name": "nomad-sauron-cloud-init.yaml",
+            "file_size": null,
+            "file_tag": null,
+            "id": "local:snippets/nomad-sauron-cloud-init.yaml",
+            "node_name": "sauron",
+            "overwrite": true,
+            "source_file": [],
+            "source_raw": [
+              {
+                "data": "#cloud-config\nhostname: nomad-sauron.internal\nfqdn: nomad-sauron.internal.localdomain\nmanage_etc_hosts: true\n\nusers:\n  - name: ubuntu\n    shell: /bin/bash\n    sudo: ALL=(ALL) NOPASSWD:ALL\n    ssh_authorized_keys:\n      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMB6Cj1ero7AjVJiaFj+GEiw7zJHWKZFiu/zl3NHIHgd guac-party-automation\n    groups: [docker]\n\nwrite_files:\n  - path: /etc/nomad.d/nomad.hcl\n    permissions: \"0644\"\n    content: |\n      datacenter = \"dc1\"\n      data_dir   = \"/opt/nomad/data\"\n      name       = \"nomad-sauron.internal\"\n      bind_addr  = \"0.0.0.0\"\n      \n      # Each nomad node will point internally at its own vault instance\n      vault {\n        enabled = true\n        address = \"http://nomad-sauron.internal:8200\"\n        task_token_ttl = \"1h\"\n        token_file = \"/etc/nomad.d/vault.token\"\n      }\n      \n      server {\n        enabled          = true\n        bootstrap_expect = 3\n      \n        server_join {\n          retry_join = [\"192.168.100.87\", \"192.168.100.88\", \"192.168.100.89\"]\n        } \n      }\n      \n      client {\n        enabled = true\n      \n        host_volume \"vault\" {\n          path      = \"/opt/volumes/vault\"\n          read_only = false\n        }\n      \n        host_volume \"authentik-db\" {\n          path      = \"/opt/volumes/authentik-db\"\n          read_only = false\n        }\n      \n        host_volume \"guacamole-db\" {\n          path      = \"/opt/volumes/guacamole-db\"\n          read_only = false\n        }\n      }\n      \n      plugin \"docker\" {\n        config {\n          allow_privileged = true\n      \n          volumes {\n            enabled = true\n          }\n      \n          allow_caps = [\n            \"audit_write\", \"chown\", \"dac_override\", \"fowner\", \"fsetid\", \"kill\", \"mknod\", \n            \"net_bind_service\", \"setfcap\", \"setgid\", \"setpcap\", \"setuid\", \"sys_chroot\", \n            \"ipc_lock\"\n          ]\n        }\n      }\n      \n  - path: /etc/keepalived/keepalived.conf\n    permissions: \"0644\"\n    content: |\n      # Template file used by to install keepalived. Note that this file is not tf or hcl.\n      # This is purely Linux config file\n      \n      vrrp_script check_traefik {\n          # This script checks if Traefik is actually responding on port 80\n          script \"/usr/bin/curl -s -f http://localhost:8080/api/rawdata \u003e /dev/null\"\n          interval 2  # Check every 2 seconds\n          weight 20   # If it passes, add 20 to priority\n      }\n      \n      vrrp_instance VI_1 {\n          state BACKUP          # Start as BACKUP on all nodes to let priority decide\n          interface eth0        # Double-check this matches your 'ip addr' (e.g., ens18)\n          virtual_router_id 51  # Must be the same on all 3 nodes\n          priority 20          # Set to 100 on Node 1, 90 on Node 2, 80 on Node 3\n      \n          advert_int 1\n      \n          authentication {\n              auth_type PASS\n              auth_pass ]%#aQLEH5HVj\u003eibMBJ  # Simple password for the nodes to trust each other\n          }\n      \n          virtual_ipaddress {\n              192.168.100.100   # This is your new \"Magic IP\" for DNS\n          }\n      \n          track_script {\n              check_traefik\n          }\n      }\n  - path: /etc/systemd/resolved.conf\n    permissions: \"0644\"\n    content: |\n      [Resolve]\n      DNS=127.0.0.1\n      FallbackDNS=192.168.100.1 1.1.1.1\n      DNSStubListener=no\n\nruncmd:\n  - ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf\n  - systemctl restart nomad\n  - systemctl enable nomad\n  - systemctl restart keepalived\n  - systemctl enabled keepalived\n  - systemctl restart systemd-resolved",
+                "file_name": "nomad-sauron-cloud-init.yaml",
+                "resize": 0
+              }
+            ],
+            "timeout_upload": 1800
+          },
+          "sensitive_attributes": [
+            [
+              {
+                "type": "get_attr",
+                "value": "source_raw"
+              },
+              {
+                "type": "index",
+                "value": {
+                  "value": 0,
+                  "type": "number"
+                }
+              },
+              {
+                "type": "get_attr",
+                "value": "data"
+              }
+            ]
+          ],
+          "private": "bnVsbA==",
+          "dependencies": [
+            "random_password.keepalived_mgmt_passwd"
+          ]
+        },
+        {
+          "index_key": "smeagol",
+          "schema_version": 0,
+          "attributes": {
+            "content_type": "snippets",
+            "datastore_id": "local",
+            "file_mode": null,
+            "file_modification_date": null,
+            "file_name": "nomad-smeagol-cloud-init.yaml",
+            "file_size": null,
+            "file_tag": null,
+            "id": "local:snippets/nomad-smeagol-cloud-init.yaml",
+            "node_name": "smeagol",
+            "overwrite": true,
+            "source_file": [],
+            "source_raw": [
+              {
+                "data": "#cloud-config\nhostname: nomad-smeagol.internal\nfqdn: nomad-smeagol.internal.localdomain\nmanage_etc_hosts: true\n\nusers:\n  - name: ubuntu\n    shell: /bin/bash\n    sudo: ALL=(ALL) NOPASSWD:ALL\n    ssh_authorized_keys:\n      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMB6Cj1ero7AjVJiaFj+GEiw7zJHWKZFiu/zl3NHIHgd guac-party-automation\n    groups: [docker]\n\nwrite_files:\n  - path: /etc/nomad.d/nomad.hcl\n    permissions: \"0644\"\n    content: |\n      datacenter = \"dc1\"\n      data_dir   = \"/opt/nomad/data\"\n      name       = \"nomad-smeagol.internal\"\n      bind_addr  = \"0.0.0.0\"\n      \n      # Each nomad node will point internally at its own vault instance\n      vault {\n        enabled = true\n        address = \"http://nomad-smeagol.internal:8200\"\n        task_token_ttl = \"1h\"\n        token_file = \"/etc/nomad.d/vault.token\"\n      }\n      \n      server {\n        enabled          = true\n        bootstrap_expect = 3\n      \n        server_join {\n          retry_join = [\"192.168.100.87\", \"192.168.100.88\", \"192.168.100.89\"]\n        } \n      }\n      \n      client {\n        enabled = true\n      \n        host_volume \"vault\" {\n          path      = \"/opt/volumes/vault\"\n          read_only = false\n        }\n      \n        host_volume \"authentik-db\" {\n          path      = \"/opt/volumes/authentik-db\"\n          read_only = false\n        }\n      \n        host_volume \"guacamole-db\" {\n          path      = \"/opt/volumes/guacamole-db\"\n          read_only = false\n        }\n      }\n      \n      plugin \"docker\" {\n        config {\n          allow_privileged = true\n      \n          volumes {\n            enabled = true\n          }\n      \n          allow_caps = [\n            \"audit_write\", \"chown\", \"dac_override\", \"fowner\", \"fsetid\", \"kill\", \"mknod\", \n            \"net_bind_service\", \"setfcap\", \"setgid\", \"setpcap\", \"setuid\", \"sys_chroot\", \n            \"ipc_lock\"\n          ]\n        }\n      }\n      \n  - path: /etc/keepalived/keepalived.conf\n    permissions: \"0644\"\n    content: |\n      # Template file used by to install keepalived. Note that this file is not tf or hcl.\n      # This is purely Linux config file\n      \n      vrrp_script check_traefik {\n          # This script checks if Traefik is actually responding on port 80\n          script \"/usr/bin/curl -s -f http://localhost:8080/api/rawdata \u003e /dev/null\"\n          interval 2  # Check every 2 seconds\n          weight 20   # If it passes, add 20 to priority\n      }\n      \n      vrrp_instance VI_1 {\n          state BACKUP          # Start as BACKUP on all nodes to let priority decide\n          interface eth0        # Double-check this matches your 'ip addr' (e.g., ens18)\n          virtual_router_id 51  # Must be the same on all 3 nodes\n          priority 40          # Set to 100 on Node 1, 90 on Node 2, 80 on Node 3\n      \n          advert_int 1\n      \n          authentication {\n              auth_type PASS\n              auth_pass ]%#aQLEH5HVj\u003eibMBJ  # Simple password for the nodes to trust each other\n          }\n      \n          virtual_ipaddress {\n              192.168.100.100   # This is your new \"Magic IP\" for DNS\n          }\n      \n          track_script {\n              check_traefik\n          }\n      }\n  - path: /etc/systemd/resolved.conf\n    permissions: \"0644\"\n    content: |\n      [Resolve]\n      DNS=127.0.0.1\n      FallbackDNS=192.168.100.1 1.1.1.1\n      DNSStubListener=no\n\nruncmd:\n  - ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf\n  - systemctl restart nomad\n  - systemctl enable nomad\n  - systemctl restart keepalived\n  - systemctl enabled keepalived\n  - systemctl restart systemd-resolved",
+                "file_name": "nomad-smeagol-cloud-init.yaml",
+                "resize": 0
+              }
+            ],
+            "timeout_upload": 1800
+          },
+          "sensitive_attributes": [
+            [
+              {
+                "type": "get_attr",
+                "value": "source_raw"
+              },
+              {
+                "type": "index",
+                "value": {
+                  "value": 0,
+                  "type": "number"
+                }
+              },
+              {
+                "type": "get_attr",
+                "value": "data"
+              }
+            ]
+          ],
+          "private": "bnVsbA==",
+          "dependencies": [
+            "random_password.keepalived_mgmt_passwd"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.vault",
+      "mode": "managed",
+      "type": "nomad_job",
+      "name": "vault",
+      "provider": "provider[\"registry.terraform.io/hashicorp/nomad\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "allocation_ids": [],
+            "datacenters": [
+              "dc1"
+            ],
+            "deployment_id": "959d4874-0f67-7852-fb83-b569cd656582",
+            "deployment_status": "successful",
+            "deregister_on_destroy": true,
+            "deregister_on_id_change": true,
+            "detach": false,
+            "hcl2": [],
+            "id": "vault",
+            "jobspec": "job \"vault\" {\n  datacenters = [\"dc1\"]\n  type        = \"service\"\n\n  group \"vault\" {\n    count = 3\n\n    constraint {\n      operator = \"distinct_hosts\"\n      value    = \"true\"\n    }\n\n    network {\n      mode = \"host\"\n      port \"api\" {\n        static = 8200\n      }\n      port \"cluster\" {\n        static = 8201\n      }\n    }\n\n    task \"vault\" {\n      driver = \"docker\"\n\n      config {\n        image = \"hashicorp/vault:1.21.3\"\n        ports = [\"api\", \"cluster\"]\n        \n        cap_add = [\"IPC_LOCK\"] \n        \n        volumes = [\"/opt/vault/data:/vault/data\"]\n        \n        args = [\"server\", \"-config=/local/vault.hcl\"]\n      }\n\n      template {\n        data = \u003c\u003c-EOF\n          ui            = true\n          api_addr      = \"http://{{ env \"NOMAD_ADDR_api\" }}\"\n          cluster_addr  = \"https://{{ env \"NOMAD_ADDR_cluster\" }}\"\n          \n          # We keep this true because IPC_LOCK handles it, or you can disable it if testing\n          disable_mlock = true \n\n          # The Raft Configuration\n          storage \"raft\" {\n            path    = \"/vault/data\"\n            \n            # Nomad injects the exact host name (e.g., nomad-pve1) here\n            node_id = \"{{ env \"node.unique.name\" }}\"\n\n            # Terraform dynamically loops over your IPs to generate these blocks!\n            \n            retry_join {\n              leader_api_addr = \"http://192.168.100.87:8200\"\n            }\n            \n            retry_join {\n              leader_api_addr = \"http://192.168.100.88:8200\"\n            }\n            \n            retry_join {\n              leader_api_addr = \"http://192.168.100.89:8200\"\n            }\n            \n          }\n\n          listener \"tcp\" {\n            address     = \"0.0.0.0:8200\"\n            tls_disable = true\n          }\n        EOF\n\n        destination = \"local/vault.hcl\"\n      }\n\n      env {\n        VAULT_LOCAL_CONFIG = \"\"\n        SKIP_CHOWN         = \"true\"\n        VAULT_ADDR         = \"http://127.0.0.1:8200\"\n      }\n\n      resources {\n        cpu    = 500\n        memory = 512\n      }\n\n      service {\n        name     = \"vault\"\n        port     = \"api\"\n        provider = \"nomad\"\n\n        tags = [\n          \"traefik.enable=true\",\n          \"traefik.http.routers.vault.rule=Host(`vault.internal`)\",\n          \"traefik.http.routers.vault.tls=true\", # Ensure Traefik handles the certs\n        ]\n\n        # This health check is for Vault HA\n        check {\n          type     = \"http\"\n          path     = \"/v1/sys/health?standbyok=true\u0026uninitcode=200\u0026sealedcode=200\"\n          interval = \"10s\"\n          timeout  = \"3s\"\n        }\n      }\n    }\n  }\n}",
+            "json": null,
+            "modify_index": "13",
+            "name": "vault",
+            "namespace": "default",
+            "policy_override": null,
+            "purge_on_destroy": null,
+            "read_allocation_ids": false,
+            "region": "global",
+            "rerun_if_dead": false,
+            "status": "running",
+            "task_groups": [
+              {
+                "count": 3,
+                "meta": {},
+                "name": "vault",
+                "task": [
+                  {
+                    "driver": "docker",
+                    "meta": {},
+                    "name": "vault",
+                    "volume_mounts": []
+                  }
+                ],
+                "volumes": []
+              }
+            ],
+            "timeouts": null,
+            "type": "service"
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjozMDAwMDAwMDAwMDAsInVwZGF0ZSI6MzAwMDAwMDAwMDAwfX0=",
+          "dependencies": [
+            "module.nomad_cluster.null_resource.gluster_master_init",
+            "module.nomad_cluster.null_resource.gluster_secondary_mounts",
+            "module.nomad_cluster.null_resource.nomad_health_check",
+            "module.nomad_cluster.proxmox_virtual_environment_file.cloud_init",
+            "module.nomad_cluster.proxmox_virtual_environment_vm.nomad",
+            "random_password.keepalived_mgmt_passwd"
+          ]
+        }
+      ]
+    }
+  ],
+  "check_results": null
+}

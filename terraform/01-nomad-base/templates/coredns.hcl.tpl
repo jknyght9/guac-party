@@ -7,6 +7,14 @@ job "coredns" {
       # Use host DNS port
       port "dns" { static = 53 }
     }
+    # This fixes some issues where Nomad would spit out errors about port 53 being used
+    # It still spits out the errors but slightly less.
+    update {
+      max_parallel = 1
+      health_check = "checks"
+      min_healthy_time = "5s"
+      healthy_deadline = "2m"
+    }
 
     task "coredns" {
       driver = "docker"
