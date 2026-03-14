@@ -85,7 +85,7 @@ job "traefik" {
           providers:
             nomad:
               endpoint:
-                address: "http://172.17.0.1:4646"
+                address: "http://localhost:4646"
               exposedByDefault: false
 
           tls:
@@ -121,6 +121,41 @@ job "traefik" {
           interval = "10s"
           timeout  = "3s"
         }
+      }
+      
+      # --- Services ---
+      # Here we define some base level routes for Traefik such as its dashboard
+      # And Nomads dashboard.
+
+      # Nomad dashboard
+      service {
+        name = "nomad-ui"
+        port = "api"
+        provider = "nomad"
+        # The regex will handle nomad-[hostname].internal. Querying by hostname will be resolved to the node address from DNS.
+        # Traefik just needs to know how handle the requests and pass to localhost correctly. 
+        tags = [
+          "traefik.enable=true",
+          "traefik.http.routers.nomad.rule=Host(`nomad.${internal_domain}`) || HostRegexp(`nomad-[a-zA-Z0-9-]+\\.${internal_domain}`)",
+          "traefik.http.routers.nomad.entrypoints=websecure",
+          "traefik.http.routers.nomad.tls=true",
+          "traefik.http.services.nomad.loadbalancer.server.port=4646"
+        ]
+      }
+
+      # Traefik dashboard
+      service {
+        name     = "traefik-dashboard"
+        port     = "dashboard"
+        provider = "nomad"
+
+        tags = [
+          "traefik.enable=true",
+          "traefik.http.routers.dashboard.rule=Host(`traefik.${internal_domain}`)",
+          "traefik.http.routers.dashboard.entrypoints=websecure",
+          "traefik.http.routers.dashboard.tls=true",
+          "traefik.http.routers.dashboard.service=api@internal" 
+        ]
       }
     }
   }
