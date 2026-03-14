@@ -51,9 +51,9 @@ job "vault" {
             node_id = "{{ env "node.unique.name" }}"
 
             # Terraform dynamically loops over your IPs to generate these blocks!
-            %{ for ip in nomad_all_ips }
+            %{ for entry in node_records }
             retry_join {
-              leader_api_addr = "http://${ip}:8200"
+              leader_api_addr = "http://${split(" ", entry)[1]}:8200"
             }
             %{ endfor }
           }
