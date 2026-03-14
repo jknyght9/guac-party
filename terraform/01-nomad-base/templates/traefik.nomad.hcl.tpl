@@ -18,35 +18,6 @@ job "traefik" {
       }
     }
 
-    # Generate self-signed TLS certificate before Traefik starts
-    task "generate-certs" {
-      driver = "docker"
-      lifecycle {
-        hook = "prestart"
-      }
-
-      config {
-        image   = "alpine:3.20"
-        command = "/bin/sh"
-        args    = ["-c", <<-SCRIPT
-          apk add --no-cache openssl
-          mkdir -p /alloc/certs
-          openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 \
-            -keyout /alloc/certs/default.key \
-            -out /alloc/certs/default.crt \
-            -days 3650 -nodes \
-            -subj "/CN=*.${internal_domain}" \
-            -addext "subjectAltName=DNS:*.${internal_domain},DNS:${internal_domain}"
-        SCRIPT
-        ]
-      }
-
-      resources {
-        cpu    = 100
-        memory = 64
-      }
-    }
-
     task "traefik" {
       driver = "docker"
 
@@ -57,10 +28,12 @@ job "traefik" {
 
         volumes = [
           "local/traefik.yaml:/etc/traefik/traefik.yaml",
-          "../alloc/certs:/certs:ro",
+          "local/dynamic.yaml:/etc/traefik/dynamic.yaml",
+          "/mnt/nomad-data/traefik/certs:/certs:ro",
         ]
       }
 
+      # Main traefik.yaml
       template {
         data = <<-EOF
           entryPoints:
@@ -88,12 +61,10 @@ job "traefik" {
                 address: "http://localhost:4646"
               exposedByDefault: false
 
-          tls:
-            stores:
-              default:
-                defaultCertificate:
-                  certFile: /certs/default.crt
-                  keyFile: /certs/default.key
+            # Look here for dynamic configuration changes (certs) 
+            file:
+              filename: "/etc/traefik/dynamic.yaml"
+              watch: true
 
           log:
             level: INFO
@@ -102,6 +73,20 @@ job "traefik" {
         EOF
 
         destination = "local/traefik.yaml"
+      }
+
+      # Dynamic certs file template
+      template {
+        data = <<-EOF
+          tls:
+            stores:
+              default:
+                defaultCertificate:
+                  certFile: /certs/master.crt
+                  keyFile: /certs/master.key
+        EOF
+
+        destination = "local/dynamic.yaml"
       }
 
       resources {
@@ -122,7 +107,7 @@ job "traefik" {
           timeout  = "3s"
         }
       }
-      
+
       # --- Services ---
       # Here we define some base level routes for Traefik such as its dashboard
       # And Nomads dashboard.

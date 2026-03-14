@@ -134,6 +134,7 @@ resource "proxmox_virtual_environment_vm" "nomad" {
 }
 
 # 3. Initialize Gluster Cluster on the Master Node
+#    And generate ssl cert stored on gluster
 resource "null_resource" "gluster_master_init" {
   depends_on = [proxmox_virtual_environment_vm.nomad]
 
@@ -156,8 +157,20 @@ resource "null_resource" "gluster_master_init" {
       "sudo sh -c 'echo \"${local.master_ip}:/nomad-data /mnt/nomad-data glusterfs defaults,_netdev 0 0\" >> /etc/fstab'",
 
       # Directory structure
-      "sudo mkdir -p /mnt/nomad-data/volumes/vault",
-      "sudo chmod -R 1777 /mnt/nomad-data/volumes"
+      "sudo mkdir -p /mnt/nomad-data/traefik/certs",
+      "sudo chmod -R 700 /mnt/nomad-data/traefik/certs",
+      # Generate certs one time on the master node'
+      flatten([
+      "sudo sh -c ' \\",
+      "openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 \\",
+        " -keyout /mnt/nomad-data/traefik/certs/master.key \\",
+        " -out /mnt/nomad-data/traefik/certs/master.crt \\",
+        " -days 3650 -nodes \\",
+        " -subj '/CN=*.${var.internal_domain}' \\",
+        " -addext 'subjectAltName=DNS:*.${var.internal_domain},DNS:${var.internal_domain}''",
+      ]),
+      "sudo chmod 644 /mnt/nomad-data/traefik/certs/master.crt",
+      "sudo chmod 600 /mnt/nomad-data/traefik/certs/master.key"
     ])
 
     connection {
