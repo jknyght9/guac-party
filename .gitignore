@@ -6,11 +6,13 @@ bootstrap/secrets/*
 .env
 
 # Terraform
-terraform/.terraform/
-terraform/*.tfstate
-terraform/*.tfstate.backup
-terraform/*.tfvars
-terraform/.terraform.lock.hcl
+**/.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+*.auto.tfvars
+crash.log
+crash.*.log
 
 # Packer
 packer/ubuntu-nomad/output-*

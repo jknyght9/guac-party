@@ -3,10 +3,12 @@ data_dir   = "/opt/nomad/data"
 name       = "${node_name}"
 bind_addr  = "${bind_addr}"
 
-advertise {
-  http = "${bind_addr}"
-  rpc  = "${bind_addr}"
-  serf = "${bind_addr}"
+# Each nomad node will point internally at its own vault instance
+vault {
+  enabled = true
+  address = "http://${node_name}:8200"
+  task_token_ttl = "1h"
+  token_file = "/etc/nomad.d/vault.token"
 }
 
 server {
@@ -15,7 +17,7 @@ server {
 
   server_join {
     retry_join = [%{ for i, ip in retry_join ~}"${ip}"%{ if i < length(retry_join) - 1 ~}, %{ endif ~}%{ endfor ~}]
-  }
+  } 
 }
 
 client {
@@ -44,5 +46,11 @@ plugin "docker" {
     volumes {
       enabled = true
     }
+
+    allow_caps = [
+      "audit_write", "chown", "dac_override", "fowner", "fsetid", "kill", "mknod", 
+      "net_bind_service", "setfcap", "setgid", "setpcap", "setuid", "sys_chroot", 
+      "ipc_lock"
+    ]
   }
 }

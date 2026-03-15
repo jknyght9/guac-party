@@ -48,7 +48,7 @@ job "traefik" {
       driver = "docker"
 
       config {
-        image        = "traefik:v3.2"
+        image        = "traefik:v3.6.9"
         ports        = ["http", "https", "dashboard"]
         network_mode = "host"
 
@@ -82,7 +82,7 @@ job "traefik" {
           providers:
             nomad:
               endpoint:
-                address: "http://127.0.0.1:4646"
+                address: "http://172.17.0.1:4646"
               exposedByDefault: false
 
           tls:

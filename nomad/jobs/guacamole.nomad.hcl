@@ -89,7 +89,7 @@ job "guacamole" {
       }
 
       config {
-        image = "guacamole/guacd:1.5.5"
+        image = "guacamole/guacd:1.6.0"
         ports = ["guacd"]
       }
 
