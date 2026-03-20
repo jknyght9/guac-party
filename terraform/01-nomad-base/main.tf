@@ -10,7 +10,7 @@ locals {
   # This can possibly be deprecated, was previously used for the nomad node module
   # Need to double check where cloud init pulls host name entries
   host_entires = [
-    for k, v in var.proxmox_nodes: "${v.nomad_ip} nomad-${k}.${var.internal_domain} nomad-${k}"
+    for k, v in var.proxmox_nodes: "${v.nomad_ip} ${k}.${var.internal_domain} ${k}"
   ]
 
   # This contains records for unbound. Will resolve node specific domain names
@@ -20,8 +20,8 @@ locals {
   # That their VMs are running on
   unbound_node_records = flatten([
     for name, ip in var.proxmox_nodes : [
-      "nomad-${name}.${var.internal_domain}. ${ip.nomad_ip}",
-      "guac.nomad-${name}.${var.internal_domain}. ${ip.nomad_ip}"
+      "${name}.${var.internal_domain}. ${ip.nomad_ip}",
+      #"guac.nomad-${name}.${var.internal_domain}. ${ip.nomad_ip}"
     ]
   ])
 }

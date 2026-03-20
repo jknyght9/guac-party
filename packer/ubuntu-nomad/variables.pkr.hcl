@@ -60,7 +60,7 @@ variable "vm_memory" {
 
 variable "vm_disk_size" {
   type    = string
-  default = "20G"
+  default = "8G"
 }
 
 variable "vm_storage_pool" {

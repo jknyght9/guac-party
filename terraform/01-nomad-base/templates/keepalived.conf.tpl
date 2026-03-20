@@ -1,11 +1,16 @@
 # Template file used by to install keepalived. Note that this file is not tf or hcl.
 # This is purely Linux config file
-
+global_defs {
+    script_user ubuntu
+    enable_script_security
+}
 vrrp_script check_traefik {
     # This script checks if Traefik is actually responding on port 80
-    script "/usr/bin/curl -s -f http://localhost:8080/api/rawdata > /dev/null"
+    script "/bin/sh -c '/usr/bin/curl -s -f http://127.0.0.1:8080/api/rawdata > /dev/null'"
     interval 2  # Check every 2 seconds
     weight 20   # If it passes, add 20 to priority
+
+    init_wait 60
 }
 
 vrrp_instance VI_1 {
@@ -22,7 +27,7 @@ vrrp_instance VI_1 {
     }
 
     virtual_ipaddress {
-        ${mgmt_virtual_ip}   # This is your new "Magic IP" for DNS
+        ${mgmt_virtual_ip}  
     }
 
     track_script {

@@ -61,7 +61,7 @@ job "traefik" {
                 address: "http://localhost:4646"
               exposedByDefault: false
 
-            # Look here for dynamic configuration changes (certs) 
+            # Look here for dynamic configuration changes
             file:
               filename: "/etc/traefik/dynamic.yaml"
               watch: true
@@ -75,7 +75,8 @@ job "traefik" {
         destination = "local/traefik.yaml"
       }
 
-      # Dynamic certs file template
+      # Dynamic file template
+      # Used for certs and node level domains
       template {
         data = <<-EOF
           tls:
@@ -84,6 +85,29 @@ job "traefik" {
                 defaultCertificate:
                   certFile: /certs/master.crt
                   keyFile: /certs/master.key
+
+          http:
+            routers:
+              nomad-local-{{ env "node.unique.name" }}:
+                rule: Host(`nomad.{{ env "node.unique.name" }}`) || Host(`{{ env "node.unique.name" }}`)
+                entryPoints:
+                  - websecure
+                tls: {}
+                service: nomad-local
+              vault-{{ env "node.unique.name" }}:
+                rule: "Host(`vault.{{ env "node.unique.name" }}`)"
+                entryPoints: ["websecure"]
+                tls: {}
+                service: vault-local
+            services:
+              nomad-local:
+                loadBalancer:
+                  servers:
+                    - url: "http://{{ env "NOMAD_IP_api" }}:4646"
+              vault-local:
+                loadBalancer:
+                  servers:
+                    - url: "http://{{ env "NOMAD_IP_api" }}:8200"
         EOF
 
         destination = "local/dynamic.yaml"
@@ -120,11 +144,12 @@ job "traefik" {
         # The regex will handle nomad-[hostname].internal. Querying by hostname will be resolved to the node address from DNS.
         # Traefik just needs to know how handle the requests and pass to localhost correctly. 
         tags = [
+          # Cluster Nomad domain
           "traefik.enable=true",
-          "traefik.http.routers.nomad.rule=Host(`nomad.${internal_domain}`) || HostRegexp(`nomad-[a-zA-Z0-9-]+\\.${internal_domain}`)",
+          "traefik.http.routers.nomad.rule=Host(`nomad.${internal_domain}`)",
           "traefik.http.routers.nomad.entrypoints=websecure",
           "traefik.http.routers.nomad.tls=true",
-          "traefik.http.services.nomad.loadbalancer.server.port=4646"
+          "traefik.http.services.nomad.loadbalancer.server.port=4646",
         ]
       }
 

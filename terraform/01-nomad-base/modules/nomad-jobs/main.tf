@@ -32,7 +32,7 @@ resource "nomad_job" "unbound" {
 resource "nomad_job" "vault" {
     jobspec = templatefile("${path.root}/templates/vault.nomad.hcl.tpl", {
         # Only inform vault of the nomad records, avoids repeated addresses
-        node_records   = [ for r in var.unbound_node_records : r if startswith(r, "nomad-")]
+        node_records   = [ for r in var.unbound_node_records : r ]
         internal_domain = var.internal_domain
     })
 

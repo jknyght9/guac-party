@@ -85,6 +85,7 @@ job "vault" {
 
         tags = [
           "traefik.enable=true",
+          # Cluster level domain
           "traefik.http.routers.vault.rule=Host(`vault.${internal_domain}`)",
           "traefik.http.routers.vault.tls=true", # Ensure Traefik handles the certs
         ]

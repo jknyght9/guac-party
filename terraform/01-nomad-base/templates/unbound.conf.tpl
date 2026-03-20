@@ -20,12 +20,14 @@ server:
     hide-version: yes
 
     # Authoriatize over the *.{internal_tld}
-    local-zone: "${internal_domain}." static
+    local-zone: "${internal_domain}." transparent
 
     # Node specific 
     %{ for entry in node_records ~}
+local-data: "${split(" ", entry)[0]} IN A ${split(" ", entry)[1]}"
+    local-zone: "${split(" ", entry)[0]}" redirect
     local-data: "${split(" ", entry)[0]} IN A ${split(" ", entry)[1]}"
-    %{ endfor ~}
+    %{ endfor ~} 
 
     # Wildcard-ish catch-all for the VIP
     # Unbound doesn't do regex wildcards easily, so we define the primary services

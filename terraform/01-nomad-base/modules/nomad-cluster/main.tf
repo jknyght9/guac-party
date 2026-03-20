@@ -15,7 +15,7 @@ locals {
     prefix_length = split("/", var.subnet_cidr)[1]
 
     host_entries = [
-        for k, v in var.proxmox_nodes: "${v.nomad_ip} nomad-${k}.${var.internal_domain}"
+        for k, v in var.proxmox_nodes: "${v.nomad_ip} ${k}.${var.internal_domain}"
     ]
 }
 
@@ -32,7 +32,7 @@ resource "proxmox_virtual_environment_file" "cloud_init" {
             ssh_public_key = var.ssh_public_key
             # Nomad configuration
             nomad_config = templatefile("${path.module}/../../templates/nomad.hcl.tpl", {
-                node_name = "nomad-${each.key}.${var.internal_domain}"
+                node_name = "${each.key}.${var.internal_domain}"
                 bind_addr = "0.0.0.0"
                 bootstrap_expect = length(local.node_names)
                 retry_join = local.all_ips
@@ -49,7 +49,7 @@ resource "proxmox_virtual_environment_file" "cloud_init" {
               vm_gateway = var.vm_gateway
             })
         })
-        file_name = "nomad-${each.key}-cloud-init.yaml"
+        file_name = "${each.key}-cloud-init.yaml"
     }
 }
 
@@ -108,11 +108,25 @@ resource "proxmox_virtual_environment_vm" "nomad" {
     # Per-node provisioning (Local disks & /etc/hosts)
     provisioner "remote-exec" {
         inline = flatten([
-            "sudo mkfs.xfs -f /dev/sda",
+            # Partition extra disk
+            "sudo parted /dev/sda --script mklabel gpt",
+            "sudo parted /dev/sda --script mkpart primary xfs 1MiB 20GiB",
+            "sudo parted /dev/sda --script mkpart primary 20GiB 100%",
+            "sudo parted /dev/sda --script set 2 lvm on",
+            "sleep 2",
+            # Glusterfs
+            "sudo mkfs.xfs -f /dev/sda1",
             "sudo mkdir -p /srv/gluster/brick0",
-            "sudo mount /dev/sda /srv/gluster/brick0",
-            "sudo sh -c 'echo \"/dev/sda /srv/gluster/brick0 xfs defaults 0 0\" >> /etc/fstab'",
+            "sudo mount /dev/sda1 /srv/gluster/brick0",
+            "sudo sh -c 'echo \"/dev/sda1 /srv/gluster/brick0 xfs defaults 0 0\" >> /etc/fstab'",
             "sudo mkdir -p /srv/gluster/brick0/nomad-data",
+            # Extra LVM space
+            "export VG_NAME=$(sudo vgs --noheadings -o name | tr -d ' ')",
+            "export LV_NAME=$(sudo lvs --noheadings -o lv_name | tr -d ' ' | head -n 1)",
+            "sudo pvcreate /dev/sda2",
+            "sudo vgextend $VG_NAME /dev/sda2",
+            "sudo lvextend -l +100%FREE /dev/$VG_NAME/$LV_NAME",
+            "sudo resize2fs /dev/$VG_NAME/$LV_NAME",
             # DNS Controls
             [
             for entry in local.host_entries :
