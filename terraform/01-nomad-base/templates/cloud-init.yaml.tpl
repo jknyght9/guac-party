@@ -16,6 +16,10 @@ write_files:
     permissions: "0644"
     content: |
       ${indent(6, nomad_config)}
+  - path: /etc/consul.d/consul.hcl
+    permissions: "0644"
+    content: |
+      ${indent(6, consul_config)}
   - path: /etc/keepalived/keepalived.conf
     permissions: "0644"
     content: |
@@ -28,6 +32,8 @@ write_files:
 runcmd:
   - systemctl restart nomad
   - systemctl enable nomad
+  - systemctl restart consul
+  - systemctl enable consul
   - systemctl restart keepalived
   - systemctl enabled keepalived
   - systemctl restart systemd-resolved

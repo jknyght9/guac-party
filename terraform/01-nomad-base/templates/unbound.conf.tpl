@@ -35,6 +35,14 @@ local-data: "${split(" ", entry)[0]} IN A ${split(" ", entry)[1]}"
     local-data: "nomad.${internal_domain}. IN A ${virtual_ip}"
     local-data: "traefik.${internal_domain}. IN A ${virtual_ip}"
 
+    # Allow Unbound to talk to the local Consul port
+    do-not-query-localhost: no
+
+    # Define the Consul forwarding rule
+    stub-zone:
+        name: "consul."
+        stub-addr: 127.0.0.1@8600
+
 # Upstream Recursion
 forward-zone:
     name: "."

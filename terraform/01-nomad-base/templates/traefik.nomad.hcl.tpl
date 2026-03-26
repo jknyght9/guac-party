@@ -60,6 +60,10 @@ job "traefik" {
               endpoint:
                 address: "http://localhost:4646"
               exposedByDefault: false
+            consulCatalog:
+              endpoint:
+                address: "http://localhost:8500"
+              exposedByDefault: false
 
             # Look here for dynamic configuration changes
             file:

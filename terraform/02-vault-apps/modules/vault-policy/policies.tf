@@ -1,3 +1,4 @@
+# Enable nomad to use its own secret engine and tokens
 resource "vault_policy" "nomad_server" {
     name = "nomad-server"
     policy = <<EOT
@@ -17,20 +18,16 @@ path "auth/token/renew-self" {
 EOT    
 }
 
-# Nomad Management Role
-resource "vault_nomad_secret_role" "management" {
-    backend = vault_mount.nomad.path
-    role = "management"
-    type = "management"
-    policies = ["postgres", "authentik", "guacamole"]
-}
-
 # Policy for shared Postgres database
 resource "vault_policy" "postgres" {
     name = "postgres"
     policy = <<EOT
 path "${vault_mount.secret.path}/data/postgres/*" {
   capabilities = ["read"]
+}
+
+path "${vault_mount.secret.path}/metadata/postgres/*" {
+  capabilities = ["list"]
 }
 EOT
 }

@@ -2,6 +2,11 @@ job "unbound" {
   datacenters = ["dc1"]
   type        = "system"
 
+  constraint {
+    operator = "distinct_hosts"
+    value    = "true"
+  }
+
   update {
     max_parallel = 1
     min_healthy_time = "10s"

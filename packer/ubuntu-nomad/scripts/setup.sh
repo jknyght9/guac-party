@@ -36,6 +36,7 @@ echo \
 
 apt-get update
 apt-get install -y nomad
+apt-get install -y consul
 
 # Create Nomad directories
 mkdir -p /opt/nomad/data
