@@ -17,3 +17,5 @@ provider "proxmox" {
 provider "nomad" {
     address = "http://${split("/", values(module.nomad_cluster.nodes)[0].initialization[0].ip_config[0].ipv4[0].address)[0]}:4646"
 }
+
+provider "random" {}

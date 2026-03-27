@@ -1,3 +1,20 @@
+terraform {
+  required_providers {
+    proxmox = {
+      source  = "bpg/proxmox"
+      version = "0.99.0"
+    }
+    random = {
+      source  = "hashicorp/random"
+      version = "3.8.1"
+    }
+    nomad = {
+      source  = "hashicorp/nomad"
+      version = "2.5.2"
+    }
+  }
+}
+
 locals {
   node_names = keys(var.proxmox_nodes)
   node_count = length(local.node_names)
@@ -68,4 +85,22 @@ module "nomad-jobs" {
   internal_domain = var.internal_domain
   virtual_ip = var.mgmt_virtual_ip
   mgmt_gateway = var.vm_gateway
+}
+
+# These credentials need to survive layer 02 being destryoed
+# Postgres data lives on disk and a destroy will keep the original credentials
+# Recreating the creds in layer 02 will result in you getting locked out, as terraform regenerates them but the data still uses orignal
+resource "random_password" "postgres_root_pw" {
+    length = 24
+    special = false
+}
+
+resource "random_password" "postgres_repl_pw" {
+    length = 24
+    special = false
+}
+
+resource "random_password" "postgres_rewind_pw" {
+    length = 24
+    special = false
 }

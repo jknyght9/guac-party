@@ -1,6 +1,28 @@
 # This file is maintained automatically by "terraform init".
 # Manual edits may be lost in future updates.
 
+provider "registry.terraform.io/doctolib/postgresql" {
+  version     = "2.26.2"
+  constraints = "2.26.2"
+  hashes = [
+    "h1:eEBMxUmPARlNTxOUXqgMjGwei0seoa3jj3HXD3zzwJ0=",
+    "zh:0f54ed9f1db518b24e01fcfc3ad6cb83417a03200a8055c8ad18f47ecfaba940",
+    "zh:1156f83773979f72cfe71ccc426afcfb5375aa84c211df29512ba2b6140ee065",
+    "zh:15a54745ae49ded469c146792272190cde5d11e096199f824ebff356b6d882cd",
+    "zh:29dea4255866166e11fc9302fd4e282516e87dfdb57d4c8cb3dfa4e87557e266",
+    "zh:38c20873835f6aa8f3961098853db146ba2f92f4707f1810e1534bdc8c8fc5b2",
+    "zh:515b10f25655d9e5b8a02133c35a9594ac8d9cc351af2f01d810b368b1061fde",
+    "zh:7d64e1694679acfc7375b5c59dbd117b01ba2062782c068f2dbc2c45656c2335",
+    "zh:abf567d40241b15cd71dfa541b6133bc55723a52af442bffd641e94dfd9527f3",
+    "zh:c192177061910da12d217fad057504dafa335254612830b62c22bcc1b6c0039a",
+    "zh:cec49bf2089a766174957306794a4ec1b7e01851c87fc1e4109a445affa64858",
+    "zh:dc7acc9b549e6556d58210da0a1dcf5a7b31f977249920458f7626c8b61b6674",
+    "zh:e34bb8da4b259e17e14420671275d9add79ce30caf3ba14770ed6a2afe42214d",
+    "zh:ea8bc8b7be62be4671322b2c98ec60eea7c8a36c16a57f9a6d0c553306289b71",
+    "zh:feacb45b4f97ea848ca09507e5d8c5b0191a00321ba5e0a980da22e2dc017bfe",
+  ]
+}
+
 provider "registry.terraform.io/hashicorp/nomad" {
   version = "2.5.2"
   hashes = [

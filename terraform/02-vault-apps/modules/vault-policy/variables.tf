@@ -1,16 +1,28 @@
+variable "postgres_root_user" {
+    type = string
+    description = "Root username of postgres data"
+}
 variable "postgres_root_pw" {
     type = string
     description = "Root password of the postgres database"
 }
 
+variable "postgres_repl_user" {
+    type = string
+    description = "Replicate username"
+}
 variable "postgres_repl_pw" {
     type = string
-    description = "Root password of the postgres database"
+    description = "Replicate password of the postgres database"
 }
 
+variable "postgres_rewind_user" {
+    type = string
+    description = "Rewind user of postgres database, used to rejoin cluster"
+}
 variable "postgres_rewind_pw" {
     type = string
-    description = "Root password of the postgres database"
+    description = "Rewind password of the postgres database"
 }
 
 variable "jwt_backend_path" {
@@ -26,10 +38,4 @@ variable "secret_mount_path" {
 variable "vault_nomad_path" {
     type = string
     description = "Mount path for Nomad secret engine in vault, i.e. nomad"
-}
-
-variable "vault_backend_dependency" {
-  type    = any
-  default = null
-  description = "A helper variable to force dependency on the JWT backend"
 }

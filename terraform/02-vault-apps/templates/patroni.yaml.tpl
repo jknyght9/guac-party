@@ -34,6 +34,7 @@ postgresql:
     - host replication standby ::1/128 md5
     - host replication standby 192.168.100.0/24 md5
     - host all all 192.168.100.0/24 md5
+    - host all all 192.168.90.0/24 md5
     - local all all trust
     - host all all 127.0.0.1/32 md5
 

@@ -8,6 +8,14 @@ terraform {
         source = "hashicorp/random"
         version = "3.8.1"
     }
+    postgresql = {
+      source  = "doctolib/postgresql"
+      version = "2.26.2"
+    }
+    nomad = {
+      source  = "hashicorp/nomad"
+      version = "2.5.2"
+    }
   }
 }
 
@@ -27,10 +35,6 @@ resource "vault_jwt_auth_backend" "nomad" {
   path               = "jwt-nomad"
   jwks_url           =  "${local.nomad_jwt_issuer}/.well-known/jwks.json"
   bound_issuer       = local.nomad_jwt_issuer
-
-  lifecycle {
-    prevent_destroy = false
-  }
 }
 
 # Enable the kv secrets engine
@@ -43,44 +47,57 @@ resource "vault_mount" "secret" {
 module "vault-policy" {
   source = "./modules/vault-policy"
 
-  vault_backend_dependency = vault_jwt_auth_backend.nomad
+  jwt_backend_path  = vault_jwt_auth_backend.nomad.path
+  secret_mount_path = vault_mount.secret.path
+  vault_nomad_path = vault_mount.nomad.path
+  # These creds are pulled from layer01. They will not be recreated on a layer 02 apply
+  postgres_root_user = local.postgres_root_user
+  postgres_root_pw = local.postgres_root_pw
+
+  postgres_repl_user = local.postgres_repl_user
+  postgres_repl_pw = local.postgres_repl_pw
+
+  postgres_rewind_user = local.postgres_rewind_user
+  postgres_rewind_pw = local.postgres_rewind_pw
+}
+
+module "postgres-jobs" {
+  source = "./modules/postgres-jobs"
+  depends_on = [ module.vault-policy ]
 
   jwt_backend_path  = vault_jwt_auth_backend.nomad.path
   secret_mount_path = vault_mount.secret.path
   vault_nomad_path = vault_mount.nomad.path
 
-  postgres_root_pw = random_password.postgres_root_pw.result
-  postgres_repl_pw = random_password.postgres_repl_pw.result
-  postgres_rewind_pw = random_password.postgres_rewind_pw.result
+  authentik_db_pw = random_password.authentik_db_pw.result
+  authentik_email_pw = random_password.authentik_email_pw.result
+  authentik_secret_key = random_id.authentik_secret_key.b64_std
+
+  guacamole_admin_pw = random_password.guacamole_admin_pw.result
+  guacamole_db_pw = random_password.guacamole_db_pw.result
 }
 
-
-
-resource "random_password" "postgres_root_pw" {
-    length = 18
-    special = true
-    override_special = "!#%&*()-_=+[]<>:?"
-}
-resource "random_password" "postgres_repl_pw" {
-    length = 18
-    special = true
-    override_special = "!#%&*()-_=+[]<>:?"
+# Authentik recommends using 60 byte base64 for secret key
+resource "random_id" "authentik_secret_key" {
+    byte_length = 60
 }
 
-resource "random_password" "postgres_rewind_pw" {
-    length = 18
-    special = true
-    override_special = "!#%&*()-_=+[]<>:?"
+resource "random_password" "authentik_email_pw" {
+    length = 24
+    special = false
 }
 
-resource "random_password" "Guacamole_pw" {
-  length = 18
-  special = true
-  override_special = "!#%&*()-_=+[]<>:?" 
+resource "random_password" "authentik_db_pw" {
+    length = 24
+    special = false
 }
 
-resource "random_password" "Authentik_db_pw" {
-    length = 18
-    special = true
-    override_special = "!#%&*()-_=+[]<>:?"
+resource "random_password" "guacamole_admin_pw" {
+  length = 24
+  special = false
+}
+
+resource "random_password" "guacamole_db_pw" {
+  length = 24
+  special = false
 }
