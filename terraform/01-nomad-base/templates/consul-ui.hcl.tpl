@@ -20,12 +20,12 @@ job "consul-ui-router" {
         name = "consul-ui"
         
         # Look for the localhost address.
-        address = "${attr.unique.network.ip-address}"
+        address = "$${attr.unique.network.ip-address}"
         port    = "http"
 
         tags = [
           "traefik.enable=true",
-          "traefik.http.routers.consul.rule=Host(`consul.internal`) || Host(`consul.${node_name}.internal`)",
+          "traefik.http.routers.consul.rule=Host(`consul.internal`) || Host(`consul.service.consul`)",
           "traefik.http.routers.consul.entrypoints=websecure",
           "traefik.http.services.consul.loadbalancer.server.port=8500"
         ]

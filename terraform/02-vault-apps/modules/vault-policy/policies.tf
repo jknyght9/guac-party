@@ -22,11 +22,39 @@ EOT
 resource "vault_policy" "postgres" {
     name = "postgres"
     policy = <<EOT
-path "${vault_mount.secret.path}/data/postgres/*" {
+path "${var.secret_mount_path}/data/postgres/*" {
   capabilities = ["read"]
 }
 
-path "${vault_mount.secret.path}/metadata/postgres/*" {
+path "${var.secret_mount_path}/metadata/postgres/*" {
+  capabilities = ["list"]
+}
+EOT
+}
+
+# Guacamole Policy
+resource "vault_policy" "guacamole" {
+  name   = "guacamole"
+  policy = <<EOT
+path "${var.secret_mount_path}/data/guacamole/*" {
+  capabilities = ["read"]
+}
+
+path "${var.secret_mount_path}/metadata/guacamole/*" {
+  capabilities = ["list"]
+}
+EOT
+}
+
+# Authentik Policy
+resource "vault_policy" "authentik" {
+  name   = "authentik"
+  policy = <<EOT
+path "${var.secret_mount_path}/data/authentik/*" {
+  capabilities = ["read"]
+}
+
+path "${var.secret_mount_path}/metadata/authentik/*" {
   capabilities = ["list"]
 }
 EOT

@@ -57,7 +57,7 @@ source "proxmox-iso" "ubuntu-nomad" {
 
   boot_command = [
     "<wait3s>e<down><down><down><end>",
-    " autoinstall ds='nocloud-net;s=http://{{.HTTPIP}}:{{.HTTPPort}}/'",
+    " autoinstall ds='nocloud-net;s=http://192.168.90.69:{{.HTTPPort}}/'",
     "<F10>"
   ]
 
