@@ -11,8 +11,8 @@ restapi:
   connect_address: {{ env "attr.unique.network.ip-address" }}:8008
 
 postgresql:
-  listen: 0.0.0.0:5432
-  connect_address: {{ env "attr.unique.network.ip-address" }}:5432
+  listen: 0.0.0.0:5433
+  connect_address: {{ env "attr.unique.network.ip-address" }}:5433
   data_dir: /data/postgres/base
   bin_dir: /usr/lib/postgresql/16/bin
   

@@ -71,7 +71,8 @@ resource "nomad_job" "postgres" {
   jobspec = templatefile("${path.root}/templates/postgres-ha.hcl.tpl", {
     patroni_yaml = file("${path.root}/templates/patroni.yaml.tpl")
   })
-
+  # Puring prevents a destroy + apply from erroring on job restart
+  purge_on_destroy = true
   depends_on = [ vault_jwt_auth_backend_role.postgres_admin ]
   detach = false
 }

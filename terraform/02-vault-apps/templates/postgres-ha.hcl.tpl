@@ -12,7 +12,7 @@ job "postgres-ha" {
         static = 8008
       }
       port "postgres-tcp" {
-        static = 5432
+        static = 5433
       }
     }
 

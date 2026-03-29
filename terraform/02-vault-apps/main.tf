@@ -61,8 +61,8 @@ module "vault-policy" {
   postgres_rewind_pw = local.postgres_rewind_pw
 }
 
-module "postgres-jobs" {
-  source = "./modules/postgres-jobs"
+module "postgres-init" {
+  source = "./modules/postgres-init"
   depends_on = [ module.vault-policy ]
 
   jwt_backend_path  = vault_jwt_auth_backend.nomad.path
@@ -75,6 +75,13 @@ module "postgres-jobs" {
 
   guacamole_admin_pw = random_password.guacamole_admin_pw.result
   guacamole_db_pw = random_password.guacamole_db_pw.result
+}
+
+module "user-apps" {
+  source = "./modules/user-apps"
+  depends_on = [ module.postgres-init ]
+  # Yes this says vault address, it is the 1st Nomad address
+  leader_address = local.vault_address
 }
 
 # Authentik recommends using 60 byte base64 for secret key
