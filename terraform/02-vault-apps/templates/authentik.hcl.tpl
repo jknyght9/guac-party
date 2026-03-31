@@ -9,6 +9,9 @@ job "authentik" {
       port "http" {
         static = 9000
       }
+      port "health" {
+        static = 8000
+      }
     }   
 
     vault {
@@ -20,7 +23,12 @@ job "authentik" {
       port = "http"
       tags = [
         "traefik.enable=true",
+        "traefik.http.routers.my-router.entrypoints=websecure",
         "traefik.http.routers.authentik.rule=Host(`authentik.internal`) || Host(`authentik.service.consul`)",
+        # Enable Sticky Sessions via Cookies
+        "traefik.http.services.authentik.loadbalancer.sticky=true",
+        "traefik.http.services.authentik.loadbalancer.sticky.cookie.name=authentik_sticky",
+        "traefik.http.services.authentik.loadbalancer.sticky.cookie.secure=true",
       ]
 
       check {

@@ -47,8 +47,18 @@ variable "guacamole_db_pw" {
     description = "Gaucamole password to postgresql"
 }
 
+variable "guacamole_admin_user" {
+    type = string
+    description = "Postgres username for Guacamole"
+}
+
 variable "guacamole_admin_pw" {
     type = string
     description = "Admin password for Gaucamole"
+}
+
+variable "leader_address" {
+    type = string
+    description = "IP Address of the first Nomad node"
 }
 # =========================

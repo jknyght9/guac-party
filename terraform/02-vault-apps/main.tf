@@ -21,6 +21,7 @@ terraform {
 
 locals {
   nomad_jwt_issuer = "http://172.17.0.1:4646"
+  guacamole_admin_password_sha = sha256(var.guacamole_admin_password)
 }
 
 # Enable Nomad secret engine
@@ -71,13 +72,16 @@ module "postgres-init" {
 
   authentik_db_pw = random_password.authentik_db_pw.result
   authentik_secret_key = random_id.authentik_secret_key.b64_std
-
-  guacamole_admin_pw = random_password.guacamole_admin_pw.result
-  guacamole_db_pw = random_password.guacamole_db_pw.result
-
   bootstrap_email = var.authentik_bootstrap_email
   bootstrap_password = var.authentik_bootstrap_password
   bootstrap_token = random_bytes.authentik_token.hex
+
+  guacamole_admin_pw = var.guacamole_admin_password
+  guacamole_db_pw = random_password.guacamole_db_pw.result
+  guacamole_admin_user = "guacadmin"
+  # Yes this says vault address, it is the 1st Nomad address
+  leader_address = local.vault_address
+
 }
 
 module "user-apps" {
@@ -102,11 +106,7 @@ resource "random_bytes" "authentik_token" {
   length = 16
 }
 
-resource "random_password" "guacamole_admin_pw" {
-  length = 24
-  special = false
-}
-
+# ===================================
 resource "random_password" "guacamole_db_pw" {
   length = 24
   special = false

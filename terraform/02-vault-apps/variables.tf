@@ -11,3 +11,7 @@ variable "authentik_bootstrap_email" {
 variable "authentik_bootstrap_password" {
   type = string
 }
+
+variable "guacamole_admin_password" {
+  type = string
+}

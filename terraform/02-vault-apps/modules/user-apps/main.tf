@@ -45,3 +45,12 @@ resource "nomad_job" "authentik" {
   depends_on = [ null_resource.await-bootstrap ]
   detach = false
 }
+
+# ============================================
+
+resource "nomad_job" "guacamole" {
+  jobspec = templatefile("${path.root}/templates/guacamole.hcl.tpl", {})
+  # This entire module already depends on postgres-init, but for some reason guac still loads with the previous 
+  #depends_on = [ module.postgres-init.null_resource.bootstrap_guac_admin ]
+  detach = false
+}
