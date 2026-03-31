@@ -31,7 +31,9 @@ resource "vault_kv_secret_v2" "authentik" {
     db_username    = postgresql_role.authentik.name
     db_password    = var.authentik_db_pw
     secret_key     = var.authentik_secret_key
-    email_password = var.authentik_email_pw
+    admin_password = var.bootstrap_password
+    admin_email    = var.bootstrap_email
+    admin_token    = var.bootstrap_token
   })
 }
 # =====================

@@ -23,9 +23,21 @@ variable "authentik_db_pw" {
     description = "Authentik password to postgresql"
 }
 
-variable "authentik_email_pw" {
+variable "bootstrap_password" {
     type = string
-    description = "Email password idek"
+    description = "Password for the Authentik admin user"
+    sensitive = true
+}
+
+variable "bootstrap_email" {
+    type = string
+    description = "Email address for Authentik admin user"
+}
+
+variable "bootstrap_token" {
+    type = string
+    description = "API token to load into Authentik during bootstrap"
+    sensitive = true
 }
 # =========================
 

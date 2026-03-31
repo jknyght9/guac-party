@@ -1,7 +1,6 @@
 # Run Authentik Init job
 resource "nomad_job" "authentik-bootstrap" {
   jobspec = templatefile("${path.root}/templates/authentik-bootstrap.hcl.tpl", {})
-
   detach = false
 }
 # Wait for the batch job to exit before starting the rest of Authentik
@@ -42,7 +41,7 @@ resource "null_resource" "await-bootstrap" {
 # After bootstrap launch Authentik on all nodes
 resource "nomad_job" "authentik" {
   jobspec = templatefile("${path.root}/templates/authentik.hcl.tpl", {})
-  depends_on = [ null_resource.await-bootstrap ]
 
+  depends_on = [ null_resource.await-bootstrap ]
   detach = false
 }

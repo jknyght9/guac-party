@@ -54,7 +54,6 @@ AUTHENTIK_POSTGRESQL__HOST="postgres.internal"
 AUTHENTIK_POSTGRESQL__USER="{{ .Data.data.db_username }}"
 AUTHENTIK_POSTGRESQL__PASSWORD="{{ .Data.data.db_password }}"
 AUTHENTIK_POSTGRESQL__NAME="{{ .Data.data.db_name }}"
-AUTHENTIK_BOOTSTRAP_PASSWORD="{{ .Data.data.db_password }}"
 {{ end }}
 EOH
         destination = "secrets/config.env"
@@ -92,8 +91,10 @@ EOH
 AUTHENTIK_SECRET_KEY="{{ .Data.data.secret_key }}"
 AUTHENTIK_POSTGRESQL__HOST="postgres.internal"
 AUTHENTIK_POSTGRESQL__USER="{{ .Data.data.db_username }}"
-AUTHENTIK_POSTGRESQL__PASSWORD="{{ .Data.data.db_password }}"
 AUTHENTIK_POSTGRESQL__NAME="{{ .Data.data.db_name }}"
+AUTHENTIK_POSTGRESQL__PASSWORD="{{ .Data.data.db_password }}"
+AUTHENTIK_BOOTSTRAP_PASSWORD="{{ .Data.data.admin_password }}"
+AUTHENTIK_BOOTSTRAP_EMAIL="{{ .Data.data.admin_email }}"
 {{ end }}
 EOH
         destination = "secrets/config.env"

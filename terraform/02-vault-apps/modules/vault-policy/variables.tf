@@ -5,6 +5,7 @@ variable "postgres_root_user" {
 variable "postgres_root_pw" {
     type = string
     description = "Root password of the postgres database"
+    sensitive = true
 }
 
 variable "postgres_repl_user" {
@@ -14,6 +15,7 @@ variable "postgres_repl_user" {
 variable "postgres_repl_pw" {
     type = string
     description = "Replicate password of the postgres database"
+    sensitive = true
 }
 
 variable "postgres_rewind_user" {
@@ -23,6 +25,7 @@ variable "postgres_rewind_user" {
 variable "postgres_rewind_pw" {
     type = string
     description = "Rewind password of the postgres database"
+    sensitive = true
 }
 
 variable "jwt_backend_path" {

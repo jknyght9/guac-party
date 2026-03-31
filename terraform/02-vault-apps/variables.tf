@@ -3,3 +3,11 @@ variable "internal_domain" {
   default = "internal"
   description = "Top level domain"
 }
+
+variable "authentik_bootstrap_email" {
+  type = string
+}
+
+variable "authentik_bootstrap_password" {
+  type = string
+}

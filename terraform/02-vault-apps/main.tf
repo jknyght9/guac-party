@@ -70,11 +70,14 @@ module "postgres-init" {
   vault_nomad_path = vault_mount.nomad.path
 
   authentik_db_pw = random_password.authentik_db_pw.result
-  authentik_email_pw = random_password.authentik_email_pw.result
   authentik_secret_key = random_id.authentik_secret_key.b64_std
 
   guacamole_admin_pw = random_password.guacamole_admin_pw.result
   guacamole_db_pw = random_password.guacamole_db_pw.result
+
+  bootstrap_email = var.authentik_bootstrap_email
+  bootstrap_password = var.authentik_bootstrap_password
+  bootstrap_token = random_bytes.authentik_token.hex
 }
 
 module "user-apps" {
@@ -82,21 +85,21 @@ module "user-apps" {
   depends_on = [ module.postgres-init ]
   # Yes this says vault address, it is the 1st Nomad address
   leader_address = local.vault_address
-}
+}  
 
 # Authentik recommends using 60 byte base64 for secret key
 resource "random_id" "authentik_secret_key" {
     byte_length = 60
 }
 
-resource "random_password" "authentik_email_pw" {
-    length = 24
-    special = false
+resource "random_password" "authentik_db_pw" {
+  length = 24
+  special = false
 }
 
-resource "random_password" "authentik_db_pw" {
-    length = 24
-    special = false
+# 128 bit api key
+resource "random_bytes" "authentik_token" {
+  length = 16
 }
 
 resource "random_password" "guacamole_admin_pw" {
