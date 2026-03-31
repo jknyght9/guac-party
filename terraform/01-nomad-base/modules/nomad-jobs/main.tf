@@ -38,3 +38,8 @@ resource "nomad_job" "vault" {
 
     detach = false
 }
+
+resource "nomad_job" "consul-ui" {
+    jobspec = templatefile("${path.root}/templates/consul-ui.hcl.tpl", {})
+    detach = false
+}

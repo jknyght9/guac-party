@@ -50,6 +50,7 @@ job "traefik" {
                 tls: {}
             dashboard:
               address: ":8081"
+            postgres-tcp ":5432"
 
           api:
             dashboard: true
@@ -59,6 +60,10 @@ job "traefik" {
             nomad:
               endpoint:
                 address: "http://localhost:4646"
+              exposedByDefault: false
+            consulCatalog:
+              endpoint:
+                address: "http://localhost:8500"
               exposedByDefault: false
 
             # Look here for dynamic configuration changes
@@ -108,6 +113,21 @@ job "traefik" {
                 loadBalancer:
                   servers:
                     - url: "http://{{ env "NOMAD_IP_api" }}:8200"
+          tcp:
+            routers:
+              postgres:
+                entryPoints:
+                  - "postgres-tcp"
+                rule: "HostSNI(`*`)"
+                service: "postgres-master"
+            services:
+              postgres-master:
+                loadBalancer:
+                # This tells Traefik to look at the Consul Catalog for 'postgres' + 'master'
+                # Note: Syntax varies slightly if using file provider to point to consul
+              servers:
+                - address: "master.postgres-cluster.service.consul:5433" 
+
         EOF
 
         destination = "local/dynamic.yaml"

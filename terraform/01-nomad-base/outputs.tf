@@ -13,6 +13,22 @@ output "nomad_fqdn_list" {
   value       = { for k, v in module.nomad_cluster.nodes : k => v.name }
 }
 
+# Outputs of essentials passwords created in this layer
+output "postgres_root_pw" {
+  value     = random_password.postgres_root_pw.result
+  sensitive = true
+}
+
+output "postgres_repl_pw" {
+  value     = random_password.postgres_repl_pw.result
+  sensitive = true
+}
+
+output "postgres_rewind_pw" {
+  value     = random_password.postgres_rewind_pw.result
+  sensitive = true
+}
+
 #output "sdn_zone" {
 #  description = "SDN zone name"
 #  value       = module.proxmox_sdn.zone_name

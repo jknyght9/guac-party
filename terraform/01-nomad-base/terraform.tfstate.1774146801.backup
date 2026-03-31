@@ -1,0 +1,1035 @@
+{
+  "version": 4,
+  "terraform_version": "1.9.8",
+  "serial": 1291,
+  "lineage": "f622f573-9170-ab7f-4fa0-6c14ff6d7288",
+  "outputs": {},
+  "resources": [
+    {
+      "mode": "managed",
+      "type": "random_password",
+      "name": "keepalived_mgmt_passwd",
+      "provider": "provider[\"registry.terraform.io/hashicorp/random\"]",
+      "instances": [
+        {
+          "schema_version": 3,
+          "attributes": {
+            "bcrypt_hash": "$2a$10$0xyj799ZfutRVyKaYCzJuO1d2.AgVxPY/9E4P5bpKYHVhYx7Y5u9y",
+            "id": "none",
+            "keepers": null,
+            "length": 18,
+            "lower": true,
+            "min_lower": 0,
+            "min_numeric": 0,
+            "min_special": 0,
+            "min_upper": 0,
+            "number": true,
+            "numeric": true,
+            "override_special": "!#$%\u0026()-_+[]\u003c\u003e?",
+            "result": "YmenCJ6vOA6?6K_?t!",
+            "special": true,
+            "upper": true
+          },
+          "sensitive_attributes": [
+            [
+              {
+                "type": "get_attr",
+                "value": "bcrypt_hash"
+              }
+            ],
+            [
+              {
+                "type": "get_attr",
+                "value": "result"
+              }
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.nomad-jobs",
+      "mode": "managed",
+      "type": "nomad_job",
+      "name": "unbound",
+      "provider": "provider[\"registry.terraform.io/hashicorp/nomad\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "allocation_ids": [],
+            "datacenters": [
+              "dc1"
+            ],
+            "deployment_id": "6fdb06c9-8a6b-deaa-2e62-e05e00c2a62d",
+            "deployment_status": "successful",
+            "deregister_on_destroy": true,
+            "deregister_on_id_change": true,
+            "detach": false,
+            "hcl2": [],
+            "id": "unbound",
+            "jobspec": "job \"unbound\" {\n  datacenters = [\"dc1\"]\n  type        = \"system\"\n\n  constraint {\n    operator = \"distinct_hosts\"\n    value    = \"true\"\n  }\n\n  update {\n    max_parallel = 1\n    min_healthy_time = \"10s\"\n  }\n\n  group \"dns\" {\n    network {\n      port \"dns\" { static = 53 }\n    }\n\n    task \"unbound\" {\n      driver = \"docker\"\n\n      config {\n        image = \"mvance/unbound:1.21.1\"\n        network_mode = \"host\"\n        volumes = [\n          \"local/unbound.conf:/opt/unbound/etc/unbound/unbound.conf\"\n        ]\n      }\n\n      template {\n        data = \u003c\u003cEOH\nserver:\n\n    interface: 0.0.0.0\n    port: 53\n    \n    access-control: 127.0.0.0/8 allow\n    access-control: 192.168.0.0/16 allow\n    access-control: 172.16.0.0/12 allow # Docker Bridge\n\n    # General Tweaks for Recursion\n    do-ip4: yes\n    do-udp: yes\n    do-tcp: yes\n\n    # Allow unbound to automatically pickup virtual_ip as assigned\n    interface-automatic: yes\n\n    # Hide identity for security\n    hide-identity: yes\n    hide-version: yes\n\n    # Authoriatize over the *.{internal_tld}\n    local-zone: \"internal.\" transparent\n\n    # Node specific \n    local-data: \"saruman.internal. IN A 192.168.100.87\"\n    local-zone: \"saruman.internal.\" redirect\n    local-data: \"saruman.internal. IN A 192.168.100.87\"\n    local-data: \"sauron.internal. IN A 192.168.100.88\"\n    local-zone: \"sauron.internal.\" redirect\n    local-data: \"sauron.internal. IN A 192.168.100.88\"\n    local-data: \"smeagol.internal. IN A 192.168.100.89\"\n    local-zone: \"smeagol.internal.\" redirect\n    local-data: \"smeagol.internal. IN A 192.168.100.89\"\n    \n    # Wildcard-ish catch-all for the VIP\n    # Unbound doesn't do regex wildcards easily, so we define the primary services\n    local-data: \"vault.internal. IN A 192.168.100.100\"\n    local-data: \"nomad.internal. IN A 192.168.100.100\"\n    local-data: \"traefik.internal. IN A 192.168.100.100\"\n\n    # Allow Unbound to talk to the local Consul port\n    do-not-query-localhost: no\n\n    # Define the Consul forwarding rule\n    stub-zone:\n        name: \"consul.\"\n        stub-addr: 127.0.0.1@8600\n\n# Upstream Recursion\nforward-zone:\n    name: \".\"\n    forward-addr: 192.168.100.1\n    forward-addr: 1.1.1.1\n    forward-addr: 8.8.8.8\nEOH\n        destination = \"local/unbound.conf\"\n      }\n\n      resources {\n        cpu    = 200\n        memory = 128\n      }\n    }\n  }\n}",
+            "json": null,
+            "modify_index": "14",
+            "name": "unbound",
+            "namespace": "default",
+            "policy_override": null,
+            "purge_on_destroy": null,
+            "read_allocation_ids": false,
+            "region": "global",
+            "rerun_if_dead": false,
+            "status": "running",
+            "task_groups": [
+              {
+                "count": 1,
+                "meta": {},
+                "name": "dns",
+                "task": [
+                  {
+                    "driver": "docker",
+                    "meta": {},
+                    "name": "unbound",
+                    "volume_mounts": []
+                  }
+                ],
+                "volumes": []
+              }
+            ],
+            "timeouts": null,
+            "type": "system"
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjozMDAwMDAwMDAwMDAsInVwZGF0ZSI6MzAwMDAwMDAwMDAwfX0=",
+          "dependencies": [
+            "module.nomad_cluster.null_resource.gluster_master_init",
+            "module.nomad_cluster.null_resource.gluster_secondary_mounts",
+            "module.nomad_cluster.null_resource.nomad_health_check",
+            "module.nomad_cluster.proxmox_virtual_environment_file.cloud_init",
+            "module.nomad_cluster.proxmox_virtual_environment_vm.nomad",
+            "random_password.keepalived_mgmt_passwd"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.nomad-jobs",
+      "mode": "managed",
+      "type": "nomad_job",
+      "name": "vault",
+      "provider": "provider[\"registry.terraform.io/hashicorp/nomad\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "allocation_ids": [],
+            "datacenters": [
+              "dc1"
+            ],
+            "deployment_id": "7ec24a65-fbee-255d-896a-8dbde866dfee",
+            "deployment_status": "successful",
+            "deregister_on_destroy": true,
+            "deregister_on_id_change": true,
+            "detach": false,
+            "hcl2": [],
+            "id": "vault",
+            "jobspec": "job \"vault\" {\n  datacenters = [\"dc1\"]\n  type        = \"service\"\n\n  group \"vault\" {\n    count = 3\n\n    constraint {\n      operator = \"distinct_hosts\"\n      value    = \"true\"\n    }\n\n    network {\n      mode = \"host\"\n      port \"api\" {\n        static = 8200\n      }\n      port \"cluster\" {\n        static = 8201\n      }\n    }\n\n    task \"vault\" {\n      driver = \"docker\"\n\n      config {\n        image = \"hashicorp/vault:1.21.3\"\n        ports = [\"api\", \"cluster\"]\n        \n        cap_add = [\"IPC_LOCK\"] \n        \n        volumes = [\"/opt/vault/data:/vault/data\"]\n        \n        args = [\"server\", \"-config=/local/vault.hcl\"]\n      }\n\n      template {\n        data = \u003c\u003c-EOF\n          ui            = true\n          api_addr      = \"http://{{ env \"NOMAD_ADDR_api\" }}\"\n          cluster_addr  = \"https://{{ env \"NOMAD_ADDR_cluster\" }}\"\n          \n          # We keep this true because IPC_LOCK handles it, or you can disable it if testing\n          disable_mlock = true \n\n          # The Raft Configuration\n          storage \"raft\" {\n            path    = \"/vault/data\"\n            \n            # Nomad injects the exact host name (e.g., nomad-pve1) here\n            node_id = \"{{ env \"node.unique.name\" }}\"\n\n            # Terraform dynamically loops over your IPs to generate these blocks!\n            \n            retry_join {\n              leader_api_addr = \"http://192.168.100.87:8200\"\n            }\n            \n            retry_join {\n              leader_api_addr = \"http://192.168.100.88:8200\"\n            }\n            \n            retry_join {\n              leader_api_addr = \"http://192.168.100.89:8200\"\n            }\n            \n          }\n\n          listener \"tcp\" {\n            address     = \"0.0.0.0:8200\"\n            tls_disable = true\n          }\n        EOF\n\n        destination = \"local/vault.hcl\"\n      }\n\n      env {\n        VAULT_LOCAL_CONFIG = \"\"\n        SKIP_CHOWN         = \"true\"\n        VAULT_ADDR         = \"http://127.0.0.1:8200\"\n      }\n\n      resources {\n        cpu    = 500\n        memory = 512\n      }\n\n      service {\n        name     = \"vault\"\n        port     = \"api\"\n        provider = \"nomad\"\n\n        tags = [\n          \"traefik.enable=true\",\n          # Cluster level domain\n          \"traefik.http.routers.vault.rule=Host(`vault.internal`)\",\n          \"traefik.http.routers.vault.tls=true\", # Ensure Traefik handles the certs\n        ]\n\n        # This health check is for Vault HA\n        check {\n          type     = \"http\"\n          path     = \"/v1/sys/health?standbyok=true\u0026uninitcode=200\u0026sealedcode=200\"\n          interval = \"10s\"\n          timeout  = \"3s\"\n        }\n      }\n    }\n  }\n}",
+            "json": null,
+            "modify_index": "16",
+            "name": "vault",
+            "namespace": "default",
+            "policy_override": null,
+            "purge_on_destroy": null,
+            "read_allocation_ids": false,
+            "region": "global",
+            "rerun_if_dead": false,
+            "status": "running",
+            "task_groups": [
+              {
+                "count": 3,
+                "meta": {},
+                "name": "vault",
+                "task": [
+                  {
+                    "driver": "docker",
+                    "meta": {},
+                    "name": "vault",
+                    "volume_mounts": []
+                  }
+                ],
+                "volumes": []
+              }
+            ],
+            "timeouts": null,
+            "type": "service"
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjozMDAwMDAwMDAwMDAsInVwZGF0ZSI6MzAwMDAwMDAwMDAwfX0=",
+          "dependencies": [
+            "module.nomad_cluster.null_resource.gluster_master_init",
+            "module.nomad_cluster.null_resource.gluster_secondary_mounts",
+            "module.nomad_cluster.null_resource.nomad_health_check",
+            "module.nomad_cluster.proxmox_virtual_environment_file.cloud_init",
+            "module.nomad_cluster.proxmox_virtual_environment_vm.nomad",
+            "random_password.keepalived_mgmt_passwd"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.nomad_cluster",
+      "mode": "managed",
+      "type": "null_resource",
+      "name": "gluster_master_init",
+      "provider": "provider[\"registry.terraform.io/hashicorp/null\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "id": "1844732214255357102",
+            "triggers": {
+              "cluster_ips": "192.168.100.87,192.168.100.88,192.168.100.89"
+            }
+          },
+          "sensitive_attributes": [],
+          "dependencies": [
+            "module.nomad_cluster.proxmox_virtual_environment_file.cloud_init",
+            "module.nomad_cluster.proxmox_virtual_environment_vm.nomad",
+            "random_password.keepalived_mgmt_passwd"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.nomad_cluster",
+      "mode": "managed",
+      "type": "null_resource",
+      "name": "gluster_secondary_mounts",
+      "provider": "provider[\"registry.terraform.io/hashicorp/null\"]",
+      "instances": [
+        {
+          "index_key": "sauron",
+          "schema_version": 0,
+          "attributes": {
+            "id": "301487143244509542",
+            "triggers": null
+          },
+          "sensitive_attributes": [],
+          "dependencies": [
+            "module.nomad_cluster.null_resource.gluster_master_init",
+            "module.nomad_cluster.proxmox_virtual_environment_file.cloud_init",
+            "module.nomad_cluster.proxmox_virtual_environment_vm.nomad",
+            "random_password.keepalived_mgmt_passwd"
+          ]
+        },
+        {
+          "index_key": "smeagol",
+          "schema_version": 0,
+          "attributes": {
+            "id": "759416270616877800",
+            "triggers": null
+          },
+          "sensitive_attributes": [],
+          "dependencies": [
+            "module.nomad_cluster.null_resource.gluster_master_init",
+            "module.nomad_cluster.proxmox_virtual_environment_file.cloud_init",
+            "module.nomad_cluster.proxmox_virtual_environment_vm.nomad",
+            "random_password.keepalived_mgmt_passwd"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.nomad_cluster",
+      "mode": "managed",
+      "type": "null_resource",
+      "name": "nomad_health_check",
+      "provider": "provider[\"registry.terraform.io/hashicorp/null\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "id": "9203351281881699258",
+            "triggers": null
+          },
+          "sensitive_attributes": [],
+          "dependencies": [
+            "module.nomad_cluster.null_resource.gluster_master_init",
+            "module.nomad_cluster.null_resource.gluster_secondary_mounts",
+            "module.nomad_cluster.proxmox_virtual_environment_file.cloud_init",
+            "module.nomad_cluster.proxmox_virtual_environment_vm.nomad",
+            "random_password.keepalived_mgmt_passwd"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.nomad_cluster",
+      "mode": "managed",
+      "type": "proxmox_virtual_environment_file",
+      "name": "cloud_init",
+      "provider": "provider[\"registry.terraform.io/bpg/proxmox\"]",
+      "instances": [
+        {
+          "index_key": "saruman",
+          "schema_version": 0,
+          "attributes": {
+            "content_type": "snippets",
+            "datastore_id": "local",
+            "file_mode": null,
+            "file_modification_date": null,
+            "file_name": "saruman-cloud-init.yaml",
+            "file_size": null,
+            "file_tag": null,
+            "id": "local:snippets/saruman-cloud-init.yaml",
+            "node_name": "saruman",
+            "overwrite": true,
+            "source_file": [],
+            "source_raw": [
+              {
+                "data": "#cloud-config\nhostname: nomad-saruman.internal\nfqdn: nomad-saruman.internal.localdomain\nmanage_etc_hosts: true\n\nusers:\n  - name: ubuntu\n    shell: /bin/bash\n    sudo: ALL=(ALL) NOPASSWD:ALL\n    ssh_authorized_keys:\n      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMB6Cj1ero7AjVJiaFj+GEiw7zJHWKZFiu/zl3NHIHgd guac-party-automation\n    groups: [docker]\n\nwrite_files:\n  - path: /etc/nomad.d/nomad.hcl\n    permissions: \"0644\"\n    content: |\n      datacenter = \"dc1\"\n      data_dir   = \"/opt/consul/data\"\n      node_name  = \"saruman.internal\"\n      bind_addr  = \"0.0.0.0\"\n      client_addr = \"0.0.0.0\" # So Docker containers can reach it\n      \n      server = true\n      bootstrap_expect = 3\n      \n      # Use the same retry_join logic from Nomad\n      retry_join = [\"192.168.100.87\", \"192.168.100.88\", \"192.168.100.89\"]\n      \n      # Important for Patroni/Vault integration\n      connect {\n        enabled = true\n      }\n      \n      ui_config {\n        enabled = true\n      }\n  - path: /etc/consul.d/consul.hcl\n    permissions: \"0644\"\n    content: |\n      datacenter = \"dc1\"\n      data_dir   = \"/opt/nomad/data\"\n      name       = \"saruman.internal\"\n      bind_addr  = \"0.0.0.0\"\n      \n      # Each nomad node will point internally at its own vault instance\n      vault {\n        enabled = true\n        address = \"http://saruman.internal:8200\"\n        task_token_ttl = \"1h\"\n        \n        default_identity {\n          aud = [\"vault.io\"]\n          ttl = \"1h\"\n        }\n      }\n      \n      consul {\n        address = \"127.0.0.1:8500\"\n      }\n      \n      server {\n        enabled          = true\n        bootstrap_expect = 3\n      \n        server_join {\n          retry_join = [\"192.168.100.87\", \"192.168.100.88\", \"192.168.100.89\"]\n        }\n        oidc_issuer = \"http://172.17.0.1:4646\"\n      \n      }\n      \n      client {\n        enabled = true\n      \n        host_volume \"vault\" {\n          path      = \"/opt/volumes/vault\"\n          read_only = false\n        }\n      \n        host_volume \"authentik-db\" {\n          path      = \"/opt/volumes/authentik-db\"\n          read_only = false\n        }\n      \n        host_volume \"guacamole-db\" {\n          path      = \"/opt/volumes/guacamole-db\"\n          read_only = false\n        }\n      }\n      \n      plugin \"docker\" {\n        config {\n          allow_privileged = true\n      \n          volumes {\n            enabled = true\n          }\n      \n          allow_caps = [\n            \"audit_write\", \"chown\", \"dac_override\", \"fowner\", \"fsetid\", \"kill\", \"mknod\", \n            \"net_bind_service\", \"setfcap\", \"setgid\", \"setpcap\", \"setuid\", \"sys_chroot\", \n            \"ipc_lock\"\n          ]\n        }\n      }\n      \n  - path: /etc/keepalived/keepalived.conf\n    permissions: \"0644\"\n    content: |\n      # Template file used by to install keepalived. Note that this file is not tf or hcl.\n      # This is purely Linux config file\n      global_defs {\n          script_user ubuntu\n          enable_script_security\n      }\n      vrrp_script check_traefik {\n          # This script checks if Traefik is actually responding on port 80\n          script \"/bin/sh -c '/usr/bin/curl -s -f http://127.0.0.1:8080/api/rawdata \u003e /dev/null'\"\n          interval 2  # Check every 2 seconds\n          weight 20   # If it passes, add 20 to priority\n      \n          init_wait 60\n      }\n      \n      vrrp_instance VI_1 {\n          state BACKUP          # Start as BACKUP on all nodes to let priority decide\n          interface eth0        # Double-check this matches your 'ip addr' (e.g., ens18)\n          virtual_router_id 51  # Must be the same on all 3 nodes\n          priority 0          # Set to 100 on Node 1, 90 on Node 2, 80 on Node 3\n      \n          advert_int 1\n      \n          authentication {\n              auth_type PASS\n              auth_pass YmenCJ6vOA6?6K_?t!  # Simple password for the nodes to trust each other\n          }\n      \n          virtual_ipaddress {\n              192.168.100.100  \n          }\n      \n          track_script {\n              check_traefik\n          }\n      }\n  - path: /etc/systemd/resolved.conf\n    permissions: \"0644\"\n    content: |\n      [Resolve]\n      DNS=127.0.0.1\n      FallbackDNS=192.168.100.1 1.1.1.1\n      DNSStubListener=no\n\nruncmd:\n  - systemctl restart nomad\n  - systemctl enable nomad\n  - systemctl restart consul\n  - systemctl enable consul\n  - systemctl restart keepalived\n  - systemctl enabled keepalived\n  - systemctl restart systemd-resolved",
+                "file_name": "saruman-cloud-init.yaml",
+                "resize": 0
+              }
+            ],
+            "timeout_upload": 1800
+          },
+          "sensitive_attributes": [
+            [
+              {
+                "type": "get_attr",
+                "value": "source_raw"
+              },
+              {
+                "type": "index",
+                "value": {
+                  "value": 0,
+                  "type": "number"
+                }
+              },
+              {
+                "type": "get_attr",
+                "value": "data"
+              }
+            ]
+          ],
+          "private": "bnVsbA==",
+          "dependencies": [
+            "random_password.keepalived_mgmt_passwd"
+          ]
+        },
+        {
+          "index_key": "sauron",
+          "schema_version": 0,
+          "attributes": {
+            "content_type": "snippets",
+            "datastore_id": "local",
+            "file_mode": null,
+            "file_modification_date": null,
+            "file_name": "sauron-cloud-init.yaml",
+            "file_size": null,
+            "file_tag": null,
+            "id": "local:snippets/sauron-cloud-init.yaml",
+            "node_name": "sauron",
+            "overwrite": true,
+            "source_file": [],
+            "source_raw": [
+              {
+                "data": "#cloud-config\nhostname: nomad-sauron.internal\nfqdn: nomad-sauron.internal.localdomain\nmanage_etc_hosts: true\n\nusers:\n  - name: ubuntu\n    shell: /bin/bash\n    sudo: ALL=(ALL) NOPASSWD:ALL\n    ssh_authorized_keys:\n      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMB6Cj1ero7AjVJiaFj+GEiw7zJHWKZFiu/zl3NHIHgd guac-party-automation\n    groups: [docker]\n\nwrite_files:\n  - path: /etc/nomad.d/nomad.hcl\n    permissions: \"0644\"\n    content: |\n      datacenter = \"dc1\"\n      data_dir   = \"/opt/consul/data\"\n      node_name  = \"sauron.internal\"\n      bind_addr  = \"0.0.0.0\"\n      client_addr = \"0.0.0.0\" # So Docker containers can reach it\n      \n      server = true\n      bootstrap_expect = 3\n      \n      # Use the same retry_join logic from Nomad\n      retry_join = [\"192.168.100.87\", \"192.168.100.88\", \"192.168.100.89\"]\n      \n      # Important for Patroni/Vault integration\n      connect {\n        enabled = true\n      }\n      \n      ui_config {\n        enabled = true\n      }\n  - path: /etc/consul.d/consul.hcl\n    permissions: \"0644\"\n    content: |\n      datacenter = \"dc1\"\n      data_dir   = \"/opt/nomad/data\"\n      name       = \"sauron.internal\"\n      bind_addr  = \"0.0.0.0\"\n      \n      # Each nomad node will point internally at its own vault instance\n      vault {\n        enabled = true\n        address = \"http://sauron.internal:8200\"\n        task_token_ttl = \"1h\"\n        \n        default_identity {\n          aud = [\"vault.io\"]\n          ttl = \"1h\"\n        }\n      }\n      \n      consul {\n        address = \"127.0.0.1:8500\"\n      }\n      \n      server {\n        enabled          = true\n        bootstrap_expect = 3\n      \n        server_join {\n          retry_join = [\"192.168.100.87\", \"192.168.100.88\", \"192.168.100.89\"]\n        }\n        oidc_issuer = \"http://172.17.0.1:4646\"\n      \n      }\n      \n      client {\n        enabled = true\n      \n        host_volume \"vault\" {\n          path      = \"/opt/volumes/vault\"\n          read_only = false\n        }\n      \n        host_volume \"authentik-db\" {\n          path      = \"/opt/volumes/authentik-db\"\n          read_only = false\n        }\n      \n        host_volume \"guacamole-db\" {\n          path      = \"/opt/volumes/guacamole-db\"\n          read_only = false\n        }\n      }\n      \n      plugin \"docker\" {\n        config {\n          allow_privileged = true\n      \n          volumes {\n            enabled = true\n          }\n      \n          allow_caps = [\n            \"audit_write\", \"chown\", \"dac_override\", \"fowner\", \"fsetid\", \"kill\", \"mknod\", \n            \"net_bind_service\", \"setfcap\", \"setgid\", \"setpcap\", \"setuid\", \"sys_chroot\", \n            \"ipc_lock\"\n          ]\n        }\n      }\n      \n  - path: /etc/keepalived/keepalived.conf\n    permissions: \"0644\"\n    content: |\n      # Template file used by to install keepalived. Note that this file is not tf or hcl.\n      # This is purely Linux config file\n      global_defs {\n          script_user ubuntu\n          enable_script_security\n      }\n      vrrp_script check_traefik {\n          # This script checks if Traefik is actually responding on port 80\n          script \"/bin/sh -c '/usr/bin/curl -s -f http://127.0.0.1:8080/api/rawdata \u003e /dev/null'\"\n          interval 2  # Check every 2 seconds\n          weight 20   # If it passes, add 20 to priority\n      \n          init_wait 60\n      }\n      \n      vrrp_instance VI_1 {\n          state BACKUP          # Start as BACKUP on all nodes to let priority decide\n          interface eth0        # Double-check this matches your 'ip addr' (e.g., ens18)\n          virtual_router_id 51  # Must be the same on all 3 nodes\n          priority 20          # Set to 100 on Node 1, 90 on Node 2, 80 on Node 3\n      \n          advert_int 1\n      \n          authentication {\n              auth_type PASS\n              auth_pass YmenCJ6vOA6?6K_?t!  # Simple password for the nodes to trust each other\n          }\n      \n          virtual_ipaddress {\n              192.168.100.100  \n          }\n      \n          track_script {\n              check_traefik\n          }\n      }\n  - path: /etc/systemd/resolved.conf\n    permissions: \"0644\"\n    content: |\n      [Resolve]\n      DNS=127.0.0.1\n      FallbackDNS=192.168.100.1 1.1.1.1\n      DNSStubListener=no\n\nruncmd:\n  - systemctl restart nomad\n  - systemctl enable nomad\n  - systemctl restart consul\n  - systemctl enable consul\n  - systemctl restart keepalived\n  - systemctl enabled keepalived\n  - systemctl restart systemd-resolved",
+                "file_name": "sauron-cloud-init.yaml",
+                "resize": 0
+              }
+            ],
+            "timeout_upload": 1800
+          },
+          "sensitive_attributes": [
+            [
+              {
+                "type": "get_attr",
+                "value": "source_raw"
+              },
+              {
+                "type": "index",
+                "value": {
+                  "value": 0,
+                  "type": "number"
+                }
+              },
+              {
+                "type": "get_attr",
+                "value": "data"
+              }
+            ]
+          ],
+          "private": "bnVsbA==",
+          "dependencies": [
+            "random_password.keepalived_mgmt_passwd"
+          ]
+        },
+        {
+          "index_key": "smeagol",
+          "schema_version": 0,
+          "attributes": {
+            "content_type": "snippets",
+            "datastore_id": "local",
+            "file_mode": null,
+            "file_modification_date": null,
+            "file_name": "smeagol-cloud-init.yaml",
+            "file_size": null,
+            "file_tag": null,
+            "id": "local:snippets/smeagol-cloud-init.yaml",
+            "node_name": "smeagol",
+            "overwrite": true,
+            "source_file": [],
+            "source_raw": [
+              {
+                "data": "#cloud-config\nhostname: nomad-smeagol.internal\nfqdn: nomad-smeagol.internal.localdomain\nmanage_etc_hosts: true\n\nusers:\n  - name: ubuntu\n    shell: /bin/bash\n    sudo: ALL=(ALL) NOPASSWD:ALL\n    ssh_authorized_keys:\n      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMB6Cj1ero7AjVJiaFj+GEiw7zJHWKZFiu/zl3NHIHgd guac-party-automation\n    groups: [docker]\n\nwrite_files:\n  - path: /etc/nomad.d/nomad.hcl\n    permissions: \"0644\"\n    content: |\n      datacenter = \"dc1\"\n      data_dir   = \"/opt/consul/data\"\n      node_name  = \"smeagol.internal\"\n      bind_addr  = \"0.0.0.0\"\n      client_addr = \"0.0.0.0\" # So Docker containers can reach it\n      \n      server = true\n      bootstrap_expect = 3\n      \n      # Use the same retry_join logic from Nomad\n      retry_join = [\"192.168.100.87\", \"192.168.100.88\", \"192.168.100.89\"]\n      \n      # Important for Patroni/Vault integration\n      connect {\n        enabled = true\n      }\n      \n      ui_config {\n        enabled = true\n      }\n  - path: /etc/consul.d/consul.hcl\n    permissions: \"0644\"\n    content: |\n      datacenter = \"dc1\"\n      data_dir   = \"/opt/nomad/data\"\n      name       = \"smeagol.internal\"\n      bind_addr  = \"0.0.0.0\"\n      \n      # Each nomad node will point internally at its own vault instance\n      vault {\n        enabled = true\n        address = \"http://smeagol.internal:8200\"\n        task_token_ttl = \"1h\"\n        \n        default_identity {\n          aud = [\"vault.io\"]\n          ttl = \"1h\"\n        }\n      }\n      \n      consul {\n        address = \"127.0.0.1:8500\"\n      }\n      \n      server {\n        enabled          = true\n        bootstrap_expect = 3\n      \n        server_join {\n          retry_join = [\"192.168.100.87\", \"192.168.100.88\", \"192.168.100.89\"]\n        }\n        oidc_issuer = \"http://172.17.0.1:4646\"\n      \n      }\n      \n      client {\n        enabled = true\n      \n        host_volume \"vault\" {\n          path      = \"/opt/volumes/vault\"\n          read_only = false\n        }\n      \n        host_volume \"authentik-db\" {\n          path      = \"/opt/volumes/authentik-db\"\n          read_only = false\n        }\n      \n        host_volume \"guacamole-db\" {\n          path      = \"/opt/volumes/guacamole-db\"\n          read_only = false\n        }\n      }\n      \n      plugin \"docker\" {\n        config {\n          allow_privileged = true\n      \n          volumes {\n            enabled = true\n          }\n      \n          allow_caps = [\n            \"audit_write\", \"chown\", \"dac_override\", \"fowner\", \"fsetid\", \"kill\", \"mknod\", \n            \"net_bind_service\", \"setfcap\", \"setgid\", \"setpcap\", \"setuid\", \"sys_chroot\", \n            \"ipc_lock\"\n          ]\n        }\n      }\n      \n  - path: /etc/keepalived/keepalived.conf\n    permissions: \"0644\"\n    content: |\n      # Template file used by to install keepalived. Note that this file is not tf or hcl.\n      # This is purely Linux config file\n      global_defs {\n          script_user ubuntu\n          enable_script_security\n      }\n      vrrp_script check_traefik {\n          # This script checks if Traefik is actually responding on port 80\n          script \"/bin/sh -c '/usr/bin/curl -s -f http://127.0.0.1:8080/api/rawdata \u003e /dev/null'\"\n          interval 2  # Check every 2 seconds\n          weight 20   # If it passes, add 20 to priority\n      \n          init_wait 60\n      }\n      \n      vrrp_instance VI_1 {\n          state BACKUP          # Start as BACKUP on all nodes to let priority decide\n          interface eth0        # Double-check this matches your 'ip addr' (e.g., ens18)\n          virtual_router_id 51  # Must be the same on all 3 nodes\n          priority 40          # Set to 100 on Node 1, 90 on Node 2, 80 on Node 3\n      \n          advert_int 1\n      \n          authentication {\n              auth_type PASS\n              auth_pass YmenCJ6vOA6?6K_?t!  # Simple password for the nodes to trust each other\n          }\n      \n          virtual_ipaddress {\n              192.168.100.100  \n          }\n      \n          track_script {\n              check_traefik\n          }\n      }\n  - path: /etc/systemd/resolved.conf\n    permissions: \"0644\"\n    content: |\n      [Resolve]\n      DNS=127.0.0.1\n      FallbackDNS=192.168.100.1 1.1.1.1\n      DNSStubListener=no\n\nruncmd:\n  - systemctl restart nomad\n  - systemctl enable nomad\n  - systemctl restart consul\n  - systemctl enable consul\n  - systemctl restart keepalived\n  - systemctl enabled keepalived\n  - systemctl restart systemd-resolved",
+                "file_name": "smeagol-cloud-init.yaml",
+                "resize": 0
+              }
+            ],
+            "timeout_upload": 1800
+          },
+          "sensitive_attributes": [
+            [
+              {
+                "type": "get_attr",
+                "value": "source_raw"
+              },
+              {
+                "type": "index",
+                "value": {
+                  "value": 0,
+                  "type": "number"
+                }
+              },
+              {
+                "type": "get_attr",
+                "value": "data"
+              }
+            ]
+          ],
+          "private": "bnVsbA==",
+          "dependencies": [
+            "random_password.keepalived_mgmt_passwd"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.nomad_cluster",
+      "mode": "managed",
+      "type": "proxmox_virtual_environment_vm",
+      "name": "nomad",
+      "provider": "provider[\"registry.terraform.io/bpg/proxmox\"]",
+      "instances": [
+        {
+          "index_key": "saruman",
+          "schema_version": 0,
+          "attributes": {
+            "acpi": true,
+            "agent": [
+              {
+                "enabled": true,
+                "timeout": "15m",
+                "trim": false,
+                "type": "virtio",
+                "wait_for_ip": []
+              }
+            ],
+            "amd_sev": [],
+            "audio_device": [],
+            "bios": "seabios",
+            "boot_order": [
+              "virtio0",
+              "net0"
+            ],
+            "cdrom": [],
+            "clone": [
+              {
+                "datastore_id": "",
+                "full": true,
+                "node_name": "saruman",
+                "retries": 1,
+                "vm_id": 9000
+              }
+            ],
+            "cpu": [
+              {
+                "affinity": "",
+                "architecture": "",
+                "cores": 4,
+                "flags": null,
+                "hotplugged": 0,
+                "limit": 0,
+                "numa": false,
+                "sockets": 1,
+                "type": "host",
+                "units": 0
+              }
+            ],
+            "delete_unreferenced_disks_on_destroy": true,
+            "description": null,
+            "disk": [
+              {
+                "aio": "io_uring",
+                "backup": true,
+                "cache": "none",
+                "datastore_id": "ScratchDisk1",
+                "discard": "ignore",
+                "file_format": "raw",
+                "file_id": "",
+                "import_from": "",
+                "interface": "scsi0",
+                "iothread": true,
+                "path_in_datastore": "vm-9001-disk-1",
+                "replicate": true,
+                "serial": "",
+                "size": 50,
+                "speed": [],
+                "ssd": false
+              }
+            ],
+            "efi_disk": [],
+            "hook_script_file_id": null,
+            "hostpci": [],
+            "hotplug": null,
+            "id": "9001",
+            "initialization": [
+              {
+                "datastore_id": "local-lvm",
+                "dns": [
+                  {
+                    "domain": "internal",
+                    "servers": [
+                      "192.168.100.1",
+                      "1.1.1.1"
+                    ]
+                  }
+                ],
+                "file_format": "",
+                "interface": "scsi1",
+                "ip_config": [
+                  {
+                    "ipv4": [
+                      {
+                        "address": "192.168.100.87/24",
+                        "gateway": "192.168.100.1"
+                      }
+                    ],
+                    "ipv6": []
+                  }
+                ],
+                "meta_data_file_id": "",
+                "network_data_file_id": "",
+                "type": "",
+                "user_account": [],
+                "user_data_file_id": "local:snippets/saruman-cloud-init.yaml",
+                "vendor_data_file_id": ""
+              }
+            ],
+            "ipv4_addresses": [
+              [
+                "127.0.0.1"
+              ],
+              [
+                "192.168.100.87"
+              ]
+            ],
+            "ipv6_addresses": [
+              [
+                "::1"
+              ],
+              [
+                "fe80::be24:11ff:fe85:7fd0"
+              ]
+            ],
+            "keyboard_layout": "en-us",
+            "kvm_arguments": null,
+            "mac_addresses": [
+              "00:00:00:00:00:00",
+              "BC:24:11:85:7F:D0"
+            ],
+            "machine": null,
+            "memory": [
+              {
+                "dedicated": 8192,
+                "floating": 0,
+                "hugepages": "",
+                "keep_hugepages": false,
+                "shared": 0
+              }
+            ],
+            "migrate": false,
+            "name": "nomad-saruman.internal",
+            "network_device": [
+              {
+                "bridge": "vmbr0",
+                "disconnected": false,
+                "enabled": true,
+                "firewall": false,
+                "mac_address": "BC:24:11:85:7F:D0",
+                "model": "virtio",
+                "mtu": 0,
+                "queues": 0,
+                "rate_limit": 0,
+                "trunks": "",
+                "vlan_id": 0
+              }
+            ],
+            "network_interface_names": [
+              "lo",
+              "eth0"
+            ],
+            "node_name": "saruman",
+            "numa": [],
+            "on_boot": true,
+            "operating_system": [],
+            "pool_id": "",
+            "protection": false,
+            "purge_on_destroy": true,
+            "reboot": false,
+            "reboot_after_update": true,
+            "rng": [],
+            "scsi_hardware": "virtio-scsi-pci",
+            "serial_device": [],
+            "smbios": [],
+            "started": true,
+            "startup": [],
+            "stop_on_destroy": false,
+            "tablet_device": true,
+            "tags": [
+              "guac-party",
+              "nomad"
+            ],
+            "template": false,
+            "timeout_clone": 1800,
+            "timeout_create": 1800,
+            "timeout_migrate": 1800,
+            "timeout_move_disk": 1800,
+            "timeout_reboot": 1800,
+            "timeout_shutdown_vm": 1800,
+            "timeout_start_vm": 1800,
+            "timeout_stop_vm": 300,
+            "tpm_state": [],
+            "usb": [],
+            "vga": [],
+            "virtiofs": [],
+            "vm_id": 9001,
+            "watchdog": []
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA==",
+          "dependencies": [
+            "module.nomad_cluster.proxmox_virtual_environment_file.cloud_init",
+            "random_password.keepalived_mgmt_passwd"
+          ]
+        },
+        {
+          "index_key": "sauron",
+          "schema_version": 0,
+          "attributes": {
+            "acpi": true,
+            "agent": [
+              {
+                "enabled": true,
+                "timeout": "15m",
+                "trim": false,
+                "type": "virtio",
+                "wait_for_ip": []
+              }
+            ],
+            "amd_sev": [],
+            "audio_device": [],
+            "bios": "seabios",
+            "boot_order": [
+              "virtio0",
+              "net0"
+            ],
+            "cdrom": [],
+            "clone": [
+              {
+                "datastore_id": "",
+                "full": true,
+                "node_name": "saruman",
+                "retries": 1,
+                "vm_id": 9000
+              }
+            ],
+            "cpu": [
+              {
+                "affinity": "",
+                "architecture": "",
+                "cores": 4,
+                "flags": null,
+                "hotplugged": 0,
+                "limit": 0,
+                "numa": false,
+                "sockets": 1,
+                "type": "host",
+                "units": 0
+              }
+            ],
+            "delete_unreferenced_disks_on_destroy": true,
+            "description": null,
+            "disk": [
+              {
+                "aio": "io_uring",
+                "backup": true,
+                "cache": "none",
+                "datastore_id": "ScratchDisk1",
+                "discard": "ignore",
+                "file_format": "raw",
+                "file_id": "",
+                "import_from": "",
+                "interface": "scsi0",
+                "iothread": true,
+                "path_in_datastore": "vm-9002-disk-1",
+                "replicate": true,
+                "serial": "",
+                "size": 50,
+                "speed": [],
+                "ssd": false
+              }
+            ],
+            "efi_disk": [],
+            "hook_script_file_id": null,
+            "hostpci": [],
+            "hotplug": null,
+            "id": "9002",
+            "initialization": [
+              {
+                "datastore_id": "local-lvm",
+                "dns": [
+                  {
+                    "domain": "internal",
+                    "servers": [
+                      "192.168.100.1",
+                      "1.1.1.1"
+                    ]
+                  }
+                ],
+                "file_format": "",
+                "interface": "scsi1",
+                "ip_config": [
+                  {
+                    "ipv4": [
+                      {
+                        "address": "192.168.100.88/24",
+                        "gateway": "192.168.100.1"
+                      }
+                    ],
+                    "ipv6": []
+                  }
+                ],
+                "meta_data_file_id": "",
+                "network_data_file_id": "",
+                "type": "",
+                "user_account": [],
+                "user_data_file_id": "local:snippets/sauron-cloud-init.yaml",
+                "vendor_data_file_id": ""
+              }
+            ],
+            "ipv4_addresses": [
+              [
+                "127.0.0.1"
+              ],
+              [
+                "192.168.100.88"
+              ]
+            ],
+            "ipv6_addresses": [
+              [
+                "::1"
+              ],
+              [
+                "fe80::be24:11ff:fe5e:ec6"
+              ]
+            ],
+            "keyboard_layout": "en-us",
+            "kvm_arguments": null,
+            "mac_addresses": [
+              "00:00:00:00:00:00",
+              "BC:24:11:5E:0E:C6"
+            ],
+            "machine": null,
+            "memory": [
+              {
+                "dedicated": 8192,
+                "floating": 0,
+                "hugepages": "",
+                "keep_hugepages": false,
+                "shared": 0
+              }
+            ],
+            "migrate": false,
+            "name": "nomad-sauron.internal",
+            "network_device": [
+              {
+                "bridge": "vmbr0",
+                "disconnected": false,
+                "enabled": true,
+                "firewall": false,
+                "mac_address": "BC:24:11:5E:0E:C6",
+                "model": "virtio",
+                "mtu": 0,
+                "queues": 0,
+                "rate_limit": 0,
+                "trunks": "",
+                "vlan_id": 0
+              }
+            ],
+            "network_interface_names": [
+              "lo",
+              "eth0"
+            ],
+            "node_name": "sauron",
+            "numa": [],
+            "on_boot": true,
+            "operating_system": [],
+            "pool_id": "",
+            "protection": false,
+            "purge_on_destroy": true,
+            "reboot": false,
+            "reboot_after_update": true,
+            "rng": [],
+            "scsi_hardware": "virtio-scsi-pci",
+            "serial_device": [],
+            "smbios": [],
+            "started": true,
+            "startup": [],
+            "stop_on_destroy": false,
+            "tablet_device": true,
+            "tags": [
+              "guac-party",
+              "nomad"
+            ],
+            "template": false,
+            "timeout_clone": 1800,
+            "timeout_create": 1800,
+            "timeout_migrate": 1800,
+            "timeout_move_disk": 1800,
+            "timeout_reboot": 1800,
+            "timeout_shutdown_vm": 1800,
+            "timeout_start_vm": 1800,
+            "timeout_stop_vm": 300,
+            "tpm_state": [],
+            "usb": [],
+            "vga": [],
+            "virtiofs": [],
+            "vm_id": 9002,
+            "watchdog": []
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA==",
+          "dependencies": [
+            "module.nomad_cluster.proxmox_virtual_environment_file.cloud_init",
+            "random_password.keepalived_mgmt_passwd"
+          ]
+        },
+        {
+          "index_key": "smeagol",
+          "schema_version": 0,
+          "attributes": {
+            "acpi": true,
+            "agent": [
+              {
+                "enabled": true,
+                "timeout": "15m",
+                "trim": false,
+                "type": "virtio",
+                "wait_for_ip": []
+              }
+            ],
+            "amd_sev": [],
+            "audio_device": [],
+            "bios": "seabios",
+            "boot_order": [
+              "virtio0",
+              "net0"
+            ],
+            "cdrom": [],
+            "clone": [
+              {
+                "datastore_id": "",
+                "full": true,
+                "node_name": "saruman",
+                "retries": 1,
+                "vm_id": 9000
+              }
+            ],
+            "cpu": [
+              {
+                "affinity": "",
+                "architecture": "",
+                "cores": 4,
+                "flags": null,
+                "hotplugged": 0,
+                "limit": 0,
+                "numa": false,
+                "sockets": 1,
+                "type": "host",
+                "units": 0
+              }
+            ],
+            "delete_unreferenced_disks_on_destroy": true,
+            "description": null,
+            "disk": [
+              {
+                "aio": "io_uring",
+                "backup": true,
+                "cache": "none",
+                "datastore_id": "ScratchDisk1",
+                "discard": "ignore",
+                "file_format": "raw",
+                "file_id": "",
+                "import_from": "",
+                "interface": "scsi0",
+                "iothread": true,
+                "path_in_datastore": "vm-9003-disk-1",
+                "replicate": true,
+                "serial": "",
+                "size": 50,
+                "speed": [],
+                "ssd": false
+              }
+            ],
+            "efi_disk": [],
+            "hook_script_file_id": null,
+            "hostpci": [],
+            "hotplug": null,
+            "id": "9003",
+            "initialization": [
+              {
+                "datastore_id": "local-lvm",
+                "dns": [
+                  {
+                    "domain": "internal",
+                    "servers": [
+                      "192.168.100.1",
+                      "1.1.1.1"
+                    ]
+                  }
+                ],
+                "file_format": "",
+                "interface": "scsi1",
+                "ip_config": [
+                  {
+                    "ipv4": [
+                      {
+                        "address": "192.168.100.89/24",
+                        "gateway": "192.168.100.1"
+                      }
+                    ],
+                    "ipv6": []
+                  }
+                ],
+                "meta_data_file_id": "",
+                "network_data_file_id": "",
+                "type": "",
+                "user_account": [],
+                "user_data_file_id": "local:snippets/smeagol-cloud-init.yaml",
+                "vendor_data_file_id": ""
+              }
+            ],
+            "ipv4_addresses": [
+              [
+                "127.0.0.1"
+              ],
+              [
+                "192.168.100.89"
+              ]
+            ],
+            "ipv6_addresses": [
+              [
+                "::1"
+              ],
+              [
+                "fe80::be24:11ff:fedd:1378"
+              ]
+            ],
+            "keyboard_layout": "en-us",
+            "kvm_arguments": null,
+            "mac_addresses": [
+              "00:00:00:00:00:00",
+              "BC:24:11:DD:13:78"
+            ],
+            "machine": null,
+            "memory": [
+              {
+                "dedicated": 8192,
+                "floating": 0,
+                "hugepages": "",
+                "keep_hugepages": false,
+                "shared": 0
+              }
+            ],
+            "migrate": false,
+            "name": "nomad-smeagol.internal",
+            "network_device": [
+              {
+                "bridge": "vmbr0",
+                "disconnected": false,
+                "enabled": true,
+                "firewall": false,
+                "mac_address": "BC:24:11:DD:13:78",
+                "model": "virtio",
+                "mtu": 0,
+                "queues": 0,
+                "rate_limit": 0,
+                "trunks": "",
+                "vlan_id": 0
+              }
+            ],
+            "network_interface_names": [
+              "lo",
+              "eth0"
+            ],
+            "node_name": "smeagol",
+            "numa": [],
+            "on_boot": true,
+            "operating_system": [],
+            "pool_id": "",
+            "protection": false,
+            "purge_on_destroy": true,
+            "reboot": false,
+            "reboot_after_update": true,
+            "rng": [],
+            "scsi_hardware": "virtio-scsi-pci",
+            "serial_device": [],
+            "smbios": [],
+            "started": true,
+            "startup": [],
+            "stop_on_destroy": false,
+            "tablet_device": true,
+            "tags": [
+              "guac-party",
+              "nomad"
+            ],
+            "template": false,
+            "timeout_clone": 1800,
+            "timeout_create": 1800,
+            "timeout_migrate": 1800,
+            "timeout_move_disk": 1800,
+            "timeout_reboot": 1800,
+            "timeout_shutdown_vm": 1800,
+            "timeout_start_vm": 1800,
+            "timeout_stop_vm": 300,
+            "tpm_state": [],
+            "usb": [],
+            "vga": [],
+            "virtiofs": [],
+            "vm_id": 9003,
+            "watchdog": []
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA==",
+          "dependencies": [
+            "module.nomad_cluster.proxmox_virtual_environment_file.cloud_init",
+            "random_password.keepalived_mgmt_passwd"
+          ]
+        }
+      ]
+    }
+  ],
+  "check_results": null
+}

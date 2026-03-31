@@ -13,6 +13,8 @@ bootstrap/secrets/*
 *.auto.tfvars
 crash.log
 crash.*.log
+**/.tfstate
+
 
 # Packer
 packer/ubuntu-nomad/output-*

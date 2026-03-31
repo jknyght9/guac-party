@@ -20,6 +20,17 @@ apt-get update
 apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 apt-get install -y keepalived
 
+# Install Patroni requirments and disable postgres from auto running
+apt-get install -y postgresql-16 postgresql-client-16 patroni python3-consul
+mkdir -p /data/postgres
+chown -R postgres:postgres /data/postgres
+chmod +x /data
+chmod 700 /data/postgres
+
+systemctl stop postgresql
+systemctl disable postgresql
+
+
 systemctl enable docker
 usermod -aG docker ubuntu
 
@@ -36,6 +47,7 @@ echo \
 
 apt-get update
 apt-get install -y nomad
+apt-get install -y consul
 
 # Create Nomad directories
 mkdir -p /opt/nomad/data

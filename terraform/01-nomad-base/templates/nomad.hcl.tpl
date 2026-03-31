@@ -8,7 +8,15 @@ vault {
   enabled = true
   address = "http://${node_name}:8200"
   task_token_ttl = "1h"
-  token_file = "/etc/nomad.d/vault.token"
+  
+  default_identity {
+    aud = ["vault.io"]
+    ttl = "1h"
+  }
+}
+
+consul {
+  address = "127.0.0.1:8500"
 }
 
 server {
@@ -17,7 +25,9 @@ server {
 
   server_join {
     retry_join = [%{ for i, ip in retry_join ~}"${ip}"%{ if i < length(retry_join) - 1 ~}, %{ endif ~}%{ endfor ~}]
-  } 
+  }
+  oidc_issuer = "http://172.17.0.1:4646"
+
 }
 
 client {
@@ -52,5 +62,11 @@ plugin "docker" {
       "net_bind_service", "setfcap", "setgid", "setpcap", "setuid", "sys_chroot", 
       "ipc_lock"
     ]
+  }
+}
+
+plugin "raw_exec" {
+  config {
+    enabled = true
   }
 }
