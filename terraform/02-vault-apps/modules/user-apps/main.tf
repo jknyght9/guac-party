@@ -1,3 +1,12 @@
+terraform {
+  required_providers {   
+    authentik = {
+      source  = "goauthentik/authentik"
+      version = "2025.12.1"
+    }
+  }
+}
+
 # Run Authentik Init job
 resource "nomad_job" "authentik-bootstrap" {
   jobspec = templatefile("${path.root}/templates/authentik-bootstrap.hcl.tpl", {})
@@ -44,6 +53,64 @@ resource "nomad_job" "authentik" {
 
   depends_on = [ null_resource.await-bootstrap ]
   detach = false
+}
+
+# Becuase of some questionable choices we need to install our cert manully though terraform to Authentik
+# This is because when attempting to set it manually via the brand resource web_certificate expects a UUID
+# This UUID is internal to Authentik and cannot be extracted from Vault or the actual pem file :(
+resource "authentik_certificate_key_pair" "vault_keys" {
+  depends_on      = [ nomad_job.authentik ]
+  name             = "authentik"
+  # Pull the key pair directly from Vault
+  certificate_data = var.authentik_cert
+  key_data         = var.authentik_key
+}
+
+
+# This piece of code is ugly but it works
+# My biggest fight has been Authentik not knowing to maybe use the certs I defined in /certs/ for the webserver
+# So we have this abomination check that it is online first
+# Delete the authentik-defualt domain, but only if it exits. This prevents a reapply from causing headaches if default is already deleted
+resource "null_resource" "delete_default_brand" {
+  depends_on = [nomad_job.authentik]
+
+  provisioner "remote-exec" {
+    connection {
+      type = "ssh"
+      host = var.leader_address
+      user = "ubuntu"
+    }
+
+    inline = [
+      "#!/bin/bash",
+      # 1. Wait for API to be ready
+      "echo 'Waiting for Authentik API...'",
+      "while ! curl -s -o /dev/null -w '%%{http_code}' http://${var.leader_address}:9000/-/health/live/ | grep -q '200'; do sleep 2; done",
+      
+      # 2. Get the UUID for the brand with domain 'authentik-default'
+      # We use python3 (installed as part of Patroni) to parse the JSON for the ID
+      "BRAND_ID=$(curl -s -H 'Authorization: Bearer ${var.authentik_token}' http://${var.leader_address}:9000/api/v3/core/brands/?domain=authentik-default | python3 -c \"import sys, json; print(json.load(sys.stdin)['results'][0]['pk'] if json.load(sys.stdin)['results'] else '')\" 2>/dev/null)",
+      
+      # 3. IF BRAND_ID is not empty, DELETE it. If empty, skip.
+      "if [ ! -z \"$BRAND_ID\" ]; then",
+      "  echo \"Found default brand $BRAND_ID, deleting...\"",
+      "  curl -i -X DELETE \"http://${var.leader_address}:9000/api/v3/core/brands/$BRAND_ID/\" -H 'Authorization: Bearer ${var.authentik_token}'",
+      "else",
+      "  echo 'Default brand not found, skipping deletion.'",
+      "fi"
+    ]
+  }
+}
+
+# We then manully insert our own default brand that actually uses the PKI keys we painstakingly setup over the past several hours!
+# TODO: We can use this to add some custom branding later on!
+resource "authentik_brand" "default" {
+  depends_on      = [ null_resource.delete_default_brand ]
+  domain          = "authentik.internal"
+  branding_title  = "authentik"
+  default = true
+  # This links the DB record of the cert to the Brand
+  web_certificate = authentik_certificate_key_pair.vault_keys.id
 }
 
 # ============================================

@@ -36,6 +36,7 @@ resource "vault_kv_secret_v2" "authentik" {
     admin_token    = var.bootstrap_token
   })
 }
+
 # =====================
 
 

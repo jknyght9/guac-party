@@ -9,6 +9,9 @@ job "authentik" {
       port "http" {
         static = 9000
       }
+      port "https" {
+        static = 9443
+      }
       port "health" {
         static = 8000
       }
@@ -20,11 +23,18 @@ job "authentik" {
     }
     service {
       name = "authentik"
-      port = "http"
+      port = "https"
       tags = [
         "traefik.enable=true",
-        "traefik.http.routers.my-router.entrypoints=websecure",
-        "traefik.http.routers.authentik.rule=Host(`authentik.internal`) || Host(`authentik.service.consul`)",
+
+        "traefik.http.routers.authentik.entrypoints=websecure",
+        "traefik.http.routers.authentik.rule=Host(`authentik.internal`) || Host(`authentik.service.consul`)",        
+        "traefik.http.routers.authentik.service=authentik",
+        "traefik.http.routers.authentik.tls=true",
+        
+        "traefik.http.services.authentik.loadbalancer.serversTransport=internal-secure@file",
+        "traefik.http.services.authentik.loadbalancer.server.url=https://authentik.service.consul",
+        "traefik.http.services.authentik.loadbalancer.server.scheme=https",
         # Enable Sticky Sessions via Cookies
         "traefik.http.services.authentik.loadbalancer.sticky=true",
         "traefik.http.services.authentik.loadbalancer.sticky.cookie.name=authentik_sticky",
@@ -33,6 +43,7 @@ job "authentik" {
 
       check {
         type     = "http"
+        port     = "http"
         path     = "/-/health/live/"
         interval = "10s"
         timeout  = "2s"
@@ -81,6 +92,10 @@ EOH
         #dns_servers = ["172.17.0.1"]
         image = "ghcr.io/goauthentik/server:2026.2"
         args  = ["worker"]
+
+        volumes = [
+          "local/certs:/certs:ro"
+        ]
       }
 
       resources {
@@ -103,6 +118,7 @@ AUTHENTIK_POSTGRESQL__NAME="{{ .Data.data.db_name }}"
 AUTHENTIK_POSTGRESQL__PASSWORD="{{ .Data.data.db_password }}"
 AUTHENTIK_BOOTSTRAP_PASSWORD="{{ .Data.data.admin_password }}"
 AUTHENTIK_BOOTSTRAP_EMAIL="{{ .Data.data.admin_email }}"
+AUTHENTIK_BOOTSTRAP_TOKEN="{{ .Data.data.admin_token }}"
 {{ end }}
 EOH
         destination = "secrets/config.env"

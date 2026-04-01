@@ -16,7 +16,18 @@ terraform {
       source  = "hashicorp/nomad"
       version = "2.5.2"
     }
+    authentik = {
+      source  = "goauthentik/authentik"
+      version = "2025.12.1"
+    }
   }
+}
+
+provider "authentik" {
+  # TODO: Fix this hardcoded address
+  url = "http://192.168.100.87:9000"
+  # Hopefully this will update properly. If I had more time I would restructure this module entirely
+  token = random_bytes.authentik_token.hex
 }
 
 locals {
@@ -84,12 +95,27 @@ module "postgres-init" {
 
 }
 
+# Enable PKI engine, generate root CA + singed intermediate CA
+# And load select services with key pars and root CA
+module "vault-pki" {
+  source = "./modules/vault-pki"
+  depends_on = [ module.vault-policy ]
+  leader_address = local.vault_address
+}
+
 module "user-apps" {
   source = "./modules/user-apps"
-  depends_on = [ module.postgres-init ]
+  depends_on = [ module.postgres-init, module.vault-pki ]
   # Yes this says vault address, it is the 1st Nomad address
   leader_address = local.vault_address
-}  
+  # Keys we need to load into Authentik. Yes I would prefer to have Authentik pull them directly from Vault,
+  # But Authenik is a little weird and I have to do some tricks to get it to actually use the cert I give it.
+  # See: https://williamlam.com/2025/02/setup-https-for-oidc-endpoint-with-authentik-and-keycloak-for-vcenter-server-or-vcf-identity-federation.html
+
+  authentik_cert = module.vault-pki.authentik_certificate
+  authentik_key = module.vault-pki.authentik_private_key
+  authentik_token = random_bytes.authentik_token.hex
+}
 
 # Authentik recommends using 60 byte base64 for secret key
 resource "random_id" "authentik_secret_key" {

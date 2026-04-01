@@ -2,6 +2,12 @@ job "guacamole-cluster" {
   # 'system' ensures it runs on EVERY node in your cluster
   type = "system"
 
+  # This is for testing, so I don't have to wait for each node to load.
+  constraint {
+    attribute = "$${node.unique.name}"
+    value = "saruman.internal"
+  }
+
   group "guacamole-stack" {
     vault {
       role = "guacamole-role"

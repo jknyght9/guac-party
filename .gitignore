@@ -8,12 +8,15 @@ bootstrap/secrets/*
 # Terraform
 **/.terraform/
 *.tfstate
+*.tfstate.*
 *.tfstate.backup
 *.tfvars
 *.auto.tfvars
 crash.log
 crash.*.log
 **/.tfstate
+**/terraform.tfstate.*
+
 
 
 # Packer

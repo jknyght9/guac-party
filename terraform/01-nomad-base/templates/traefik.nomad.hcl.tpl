@@ -28,8 +28,8 @@ job "traefik" {
 
         volumes = [
           "local/traefik.yaml:/etc/traefik/traefik.yaml",
-          "local/dynamic.yaml:/etc/traefik/dynamic.yaml",
-          "/mnt/nomad-data/traefik/certs:/certs:ro",
+          "/mnt/nomad-data/traefik/certs:/etc/traefik/dynamic/certs:ro",
+          "local/dynamic.yaml:/etc/traefik/dynamic/dynamic.yaml",
         ]
       }
 
@@ -92,6 +92,10 @@ job "traefik" {
                   keyFile: /certs/master.key
 
           http:
+            serversTransports:
+              internal-secure:
+                rootcas:
+                - "/etc/traefik/dynamic/certs/root_ca.crt"
             routers:
               nomad-local-{{ env "node.unique.name" }}:
                 rule: Host(`nomad.{{ env "node.unique.name" }}`) || Host(`{{ env "node.unique.name" }}`)
