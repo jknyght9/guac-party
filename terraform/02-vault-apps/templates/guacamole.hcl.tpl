@@ -40,7 +40,7 @@ job "guacamole-cluster" {
         ports = ["http"]
         dns_servers = ["172.17.0.1"]
       }
-     
+      
       env {
         # Point to the guacd sitting right next to it
         GUACD_HOSTNAME = "172.17.0.1"
@@ -48,6 +48,23 @@ job "guacamole-cluster" {
         LOGBACK_LEVEL = "debug"
       }
       
+      template {
+        data = <<EOH
+{{ with secret "secret/data/guacamole/oidc" }}
+WEBAPP_CONTEXT=ROOT
+OPENID_AUTHORIZATION_ENDPOINT="https://authentik.internal/application/o/authorize/"
+OPENID_CLIENT_ID={{ .Data.data.client_id }}
+OPENID_ISSUER="https://authentik.internal/application/o/guacamole/"
+OPENID_JWKS_ENDPOINT="https://authentik.internal/application/o/guacamole/jwks/"
+OPENID_REDIRECT_URI="https://guacamole.saruman.internal/"
+OPENID_USERNAME_CLAIM_TYPE="preferred_username"
+OPENID_ENABLED="true"
+{{ end }}
+EOH
+        destination = "secrets/oidc.env"
+        env = true
+      }
+
       template {
         # Database (Shared across all nodes)
         data = <<EOH

@@ -21,7 +21,10 @@ resource "vault_pki_secret_backend_cert" "master_internal" {
   alt_names = [
     "*.saruman.internal",
     "*.sauron.internal",
-    "*.smeagol.internal"
+    "*.smeagol.internal",
+    "traefik.internal",
+    "vault.internal",
+    "authentik.internal"
   ]
 }
 

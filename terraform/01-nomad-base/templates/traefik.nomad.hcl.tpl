@@ -94,6 +94,7 @@ job "traefik" {
           http:
             serversTransports:
               internal-secure:
+              insecureSkipVerify: true
                 rootcas:
                 - "/etc/traefik/dynamic/certs/root_ca.crt"
             routers:

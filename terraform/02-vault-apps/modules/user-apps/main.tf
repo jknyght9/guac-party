@@ -113,6 +113,68 @@ resource "authentik_brand" "default" {
   web_certificate = authentik_certificate_key_pair.vault_keys.id
 }
 
+resource "random_password" "guac_client_id" {
+  length  = 32
+  special = false
+}
+
+resource "vault_generic_secret" "guac_oidc_creds" {
+  path = "secret/guacamole/oidc" # Adjust path to your setup
+
+  data_json = jsonencode({
+    client_id     = random_password.guac_client_id.result
+  })
+}
+
+# === Create Guac Login Flow In Authentik ====
+# This is the default flow
+data "authentik_flow" "default_authorization_flow" {
+  slug = "default-provider-authorization-implicit-consent"
+}
+data "authentik_flow" "default_invalidation_flow" {
+  slug = "default-invalidation-flow"
+}
+data "vault_generic_secret" "guac_odic_creds" {
+  depends_on = [ vault_generic_secret.guac_oidc_creds ]
+  path = "secret/guacamole/oidc"
+}
+
+# Create OIDC Provider
+resource "authentik_provider_oauth2" "guacamole" {
+  depends_on = [ authentik_brand.default ]
+  name          = "guacamole"
+  client_id     = vault_generic_secret.guac_oidc_creds.data["client_id"]
+
+  authorization_flow = data.authentik_flow.default_authorization_flow.id
+  invalidation_flow =  data.authentik_flow.default_invalidation_flow.id
+  
+  # Crucial: This must match exactly what you hit in the browser
+  allowed_redirect_uris = [
+    {
+      url = "https://guacamole.saruman.internal/#/",
+      matching_mode = "strict"
+    },
+    {
+      url = "https://guacamole.sauron.internal/#/",
+      matching_mode = "strict"
+    },
+    {
+      url = "https://guacamole.smeagol.internal/#/",
+      matching_mode = "strict"
+    }
+  ]
+  # Match the signing key you loaded yesterday
+  signing_key   = authentik_certificate_key_pair.vault_keys.id
+}
+
+# Create the Application
+resource "authentik_application" "guacamole" {
+  depends_on = [ authentik_brand.default ]
+  name              = "Guacamole"
+  slug              = "guacamole"
+  protocol_provider = authentik_provider_oauth2.guacamole.id
+}
+
 # ============================================
 
 resource "nomad_job" "guacamole" {
