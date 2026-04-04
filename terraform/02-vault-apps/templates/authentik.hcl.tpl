@@ -78,7 +78,7 @@ job "authentik" {
       
       template {
         data = <<EOH
-{{ with secret "pki_intermediate/cert/ca" }}{{ .Data.certificate }}{{ end }}
+{{ with secret "pki_root/cert/ca_chain" }}{{ .Data.certificate }}{{ end }}
 EOH
         destination = "$${NOMAD_ALLOC_DIR}/certs/root_ca.crt"
       }
@@ -150,7 +150,7 @@ EOH
       }
       template {
         data = <<EOH
-{{ with secret "pki_intermediate/cert/ca" }}{{ .Data.certificate }}{{ end }}
+{{ with secret "pki_root/cert/ca_chain" }}{{ .Data.certificate }}{{ end }}
 EOH
         destination = "$${NOMAD_ALLOC_DIR}/certs/root_ca.crt"
       }

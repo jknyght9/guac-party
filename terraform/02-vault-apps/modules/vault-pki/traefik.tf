@@ -24,7 +24,10 @@ resource "vault_pki_secret_backend_cert" "master_internal" {
     "*.smeagol.internal",
     "traefik.internal",
     "vault.internal",
-    "authentik.internal"
+    "authentik.internal",
+    "guacamole.saruman.internal",
+    "guacamole.sauron.internal",
+    "guacamole.smeagol.internal",
   ]
 }
 
@@ -53,7 +56,7 @@ resource "null_resource" "deploy_certs" {
     content     = vault_pki_secret_backend_root_cert.root_ca.certificate
     destination = "/tmp/root_ca.crt"
   }
-
+  # Load certs onto gluster
   provisioner "remote-exec" {
     inline = [
       "#!/bin/bash",
@@ -66,5 +69,13 @@ resource "null_resource" "deploy_certs" {
       "sudo chmod 600 /mnt/nomad-data/traefik/certs/master.crt",
       "sudo sh -c 'chown root:root /mnt/nomad-data/traefik/certs/*'"
     ]
+  }
+  # Reload Traefik to use the new certs
+  provisioner "remote-exec" {
+    inline = [ 
+      "#!/bin/bash",
+      "nomad job restart traefik",
+      "sleep 15"
+     ]
   }
 }

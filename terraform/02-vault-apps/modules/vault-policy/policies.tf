@@ -35,7 +35,7 @@ path "pki_intermediate/issue/postgres-role" {
   capabilities = ["create", "update"]
 }
 
-path "pki_intermediate/ca_chain" {
+path "pki_root/ca_chain" {
   capabilities = ["read"]
 }
 EOT
@@ -51,6 +51,15 @@ path "${var.secret_mount_path}/data/guacamole/*" {
 
 path "${var.secret_mount_path}/metadata/guacamole/*" {
   capabilities = ["list"]
+}
+
+# Certs
+path "pki_intermediate/issue/guacamole-role" {
+  capabilities = ["create", "update"]
+}
+
+path "pki_root/ca_chain" {
+  capabilities = ["read"]
 }
 EOT
 }
@@ -72,7 +81,7 @@ path "pki_intermediate/issue/authentik-role" {
   capabilities = ["create", "update"]
 }
 
-path "pki_intermediate/ca_chain" {
+path "pki_root/ca_chain" {
   capabilities = ["read"]
 }
 EOT

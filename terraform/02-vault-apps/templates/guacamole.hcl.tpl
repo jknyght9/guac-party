@@ -32,6 +32,37 @@ job "guacamole-cluster" {
       }
     }
 
+    # Copy our local root CA to guacamole and use keytool to appened it to
+    # A copy of the existing certificate store
+    task "ca-inject" {
+      lifecycle {
+        hook    = "prestart"
+        sidecar = false
+      }
+
+      driver = "docker"
+
+      config {
+        image = "guacamole/guacamole:latest"
+        entrypoint = ["/bin/sh"]
+        
+        args = ["-c", <<-EOT
+          cp $JAVA_HOME/lib/security/cacerts $${NOMAD_ALLOC_DIR}/data/cacerts && \
+          keytool -importcert -v -trustcacerts -alias "internal-ca" -file $${NOMAD_ALLOC_DIR}/data/root_ca.crt \
+          -keystore $${NOMAD_ALLOC_DIR}/data/cacerts -storetype PKCS12 -storepass changeit -noprompt
+          chmod 644 $${NOMAD_ALLOC_DIR}/data/cacerts     
+          EOT
+        ]
+      }
+      
+      template {
+        data = <<EOH
+{{ with secret "pki_root/cert/ca_chain" }}{{ .Data.certificate }}{{ end }}
+EOH
+        destination = "$${NOMAD_ALLOC_DIR}/data/root_ca.crt"
+      }
+    }
+
     # Task 2: The Web UI (Java-based)
     task "guacamole" {
       driver = "docker"
@@ -59,6 +90,7 @@ OPENID_JWKS_ENDPOINT="https://authentik.internal/application/o/guacamole/jwks/"
 OPENID_REDIRECT_URI="https://guacamole.saruman.internal/"
 OPENID_USERNAME_CLAIM_TYPE="preferred_username"
 OPENID_ENABLED="true"
+JAVA_OPTS="-Djavax.net.ssl.trustStore=/alloc/data/cacerts -Djavax.net.ssl.trustStoreType=PKCS12 -Djavax.net.ssl.trustStorePassword=changeit"
 {{ end }}
 EOH
         destination = "secrets/oidc.env"

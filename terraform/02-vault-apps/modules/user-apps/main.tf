@@ -13,7 +13,7 @@ resource "nomad_job" "authentik-bootstrap" {
   detach = false
 }
 # Wait for the batch job to exit before starting the rest of Authentik
-# Even when depends_on authentik-bootstrap, terraform does not wait for the job to actually be completed, just registered
+# Even when depends_on authentik-bootstrap, Terraform does not wait for the job to actually be completed, just registered
 resource "null_resource" "await-bootstrap" {
   depends_on = [nomad_job.authentik-bootstrap]
 
@@ -52,6 +52,8 @@ resource "nomad_job" "authentik" {
   jobspec = templatefile("${path.root}/templates/authentik.hcl.tpl", {})
 
   depends_on = [ null_resource.await-bootstrap ]
+  # Destroy so that on reapply Terraform does not error
+  purge_on_destroy = true
   detach = false
 }
 
@@ -59,7 +61,7 @@ resource "nomad_job" "authentik" {
 # This is because when attempting to set it manually via the brand resource web_certificate expects a UUID
 # This UUID is internal to Authentik and cannot be extracted from Vault or the actual pem file :(
 resource "authentik_certificate_key_pair" "vault_keys" {
-  depends_on      = [ nomad_job.authentik ]
+  depends_on      = [ null_resource.delete_default_brand ]
   name             = "authentik"
   # Pull the key pair directly from Vault
   certificate_data = var.authentik_cert
@@ -88,15 +90,26 @@ resource "null_resource" "delete_default_brand" {
       "while ! curl -s -o /dev/null -w '%%{http_code}' http://${var.leader_address}:9000/-/health/live/ | grep -q '200'; do sleep 2; done",
       
       # 2. Get the UUID for the brand with domain 'authentik-default'
-      # We use python3 (installed as part of Patroni) to parse the JSON for the ID
-      "BRAND_ID=$(curl -s -H 'Authorization: Bearer ${var.authentik_token}' http://${var.leader_address}:9000/api/v3/core/brands/?domain=authentik-default | python3 -c \"import sys, json; print(json.load(sys.stdin)['results'][0]['pk'] if json.load(sys.stdin)['results'] else '')\" 2>/dev/null)",
-      
+      # Use JQ to grab the UUID of the default domain
+      "JSON_DATA=$(curl -s -H 'Authorization: Bearer ${var.authentik_token}' http://${var.leader_address}:9000/api/v3/core/brands/)",
+      "BRAND_ID=$(echo $JSON_DATA | jq -r '.results[] | select(.default == true) | .brand_uuid')",
+
       # 3. IF BRAND_ID is not empty, DELETE it. If empty, skip.
       "if [ ! -z \"$BRAND_ID\" ]; then",
       "  echo \"Found default brand $BRAND_ID, deleting...\"",
       "  curl -i -X DELETE \"http://${var.leader_address}:9000/api/v3/core/brands/$BRAND_ID/\" -H 'Authorization: Bearer ${var.authentik_token}'",
       "else",
       "  echo 'Default brand not found, skipping deletion.'",
+      "fi",
+      # Verify deletion
+      "if [ ! -z \"$BRAND_ID\" ]; then",
+      "  curl -s -X DELETE -H 'Authorization: Bearer ${var.authentik_token}' http://${var.leader_address}:9000/api/v3/core/brands/$BRAND_ID/",
+      "  echo 'Waiting for deletion to propagate...'",
+      "  ITER=0",
+      "  while curl -s -H 'Authorization: Bearer ${var.authentik_token}' http://${var.leader_address}:9000/api/v3/core/brands/ | grep -q \"$BRAND_ID\"; do",
+      "    if [ $ITER -gt 10 ]; then echo 'Timeout waiting for delete'; exit 1; fi",
+      "    sleep 2; ITER=$((ITER+1))",
+      "  done",
       "fi"
     ]
   }
@@ -113,14 +126,19 @@ resource "authentik_brand" "default" {
   web_certificate = authentik_certificate_key_pair.vault_keys.id
 }
 
+# Give Authentik some time to settle before running further
+resource "time_sleep" "wait_authentik_brand" {
+  depends_on = [ authentik_brand.default ]
+  create_duration = "20s"
+}
+
 resource "random_password" "guac_client_id" {
   length  = 32
   special = false
 }
 
 resource "vault_generic_secret" "guac_oidc_creds" {
-  path = "secret/guacamole/oidc" # Adjust path to your setup
-
+  path = "secret/guacamole/oidc"
   data_json = jsonencode({
     client_id     = random_password.guac_client_id.result
   })
@@ -129,9 +147,11 @@ resource "vault_generic_secret" "guac_oidc_creds" {
 # === Create Guac Login Flow In Authentik ====
 # This is the default flow
 data "authentik_flow" "default_authorization_flow" {
+  depends_on = [ time_sleep.wait_authentik_brand ]
   slug = "default-provider-authorization-implicit-consent"
 }
 data "authentik_flow" "default_invalidation_flow" {
+  depends_on = [ time_sleep.wait_authentik_brand ]
   slug = "default-invalidation-flow"
 }
 data "vault_generic_secret" "guac_odic_creds" {
@@ -139,37 +159,50 @@ data "vault_generic_secret" "guac_odic_creds" {
   path = "secret/guacamole/oidc"
 }
 
+# Pull the default scopes needed for Guacamole to authenticate
+data "authentik_property_mapping_provider_scope" "scopes" {
+  depends_on = [ time_sleep.wait_authentik_brand ]
+  managed_list = [
+    "goauthentik.io/providers/oauth2/scope-openid",
+    "goauthentik.io/providers/oauth2/scope-email",
+    "goauthentik.io/providers/oauth2/scope-profile"
+  ]
+}
+
 # Create OIDC Provider
 resource "authentik_provider_oauth2" "guacamole" {
-  depends_on = [ authentik_brand.default ]
+  depends_on = [ time_sleep.wait_authentik_brand ]
   name          = "guacamole"
   client_id     = vault_generic_secret.guac_oidc_creds.data["client_id"]
 
   authorization_flow = data.authentik_flow.default_authorization_flow.id
   invalidation_flow =  data.authentik_flow.default_invalidation_flow.id
   
-  # Crucial: This must match exactly what you hit in the browser
+  property_mappings = data.authentik_property_mapping_provider_scope.scopes.ids
+  sub_mode = "user_username"
+
+  # Add URLS, TODO: make this dynamic using a foreach node
   allowed_redirect_uris = [
     {
-      url = "https://guacamole.saruman.internal/#/",
+      url = "https://guacamole.saruman.internal/",
       matching_mode = "strict"
     },
     {
-      url = "https://guacamole.sauron.internal/#/",
+      url = "https://guacamole.sauron.internal/",
       matching_mode = "strict"
     },
     {
-      url = "https://guacamole.smeagol.internal/#/",
+      url = "https://guacamole.smeagol.internal/",
       matching_mode = "strict"
     }
   ]
-  # Match the signing key you loaded yesterday
+  # Sign the oauth with the key pair loaded earlier
   signing_key   = authentik_certificate_key_pair.vault_keys.id
 }
 
 # Create the Application
 resource "authentik_application" "guacamole" {
-  depends_on = [ authentik_brand.default ]
+  depends_on = [ time_sleep.wait_authentik_brand ]
   name              = "Guacamole"
   slug              = "guacamole"
   protocol_provider = authentik_provider_oauth2.guacamole.id
