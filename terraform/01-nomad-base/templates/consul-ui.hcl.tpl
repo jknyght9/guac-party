@@ -26,7 +26,7 @@ job "consul-ui-router" {
         tags = [
           "traefik.enable=true",
           "traefik.http.routers.consul.rule=Host(`consul.internal`) || Host(`consul.service.consul`)",
-          "traefik.http.routers.consul.entrypoints=websecure",
+          "traefik.http.routers.consul.entrypoints=websecure-mgmt-vip",
           "traefik.http.services.consul.loadbalancer.server.port=8500"
         ]
 

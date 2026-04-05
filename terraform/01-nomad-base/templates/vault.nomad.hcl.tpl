@@ -88,6 +88,7 @@ job "vault" {
           # Cluster level domain
           "traefik.http.routers.vault.rule=Host(`vault.${internal_domain}`)",
           "traefik.http.routers.vault.tls=true", # Ensure Traefik handles the certs
+          "traefik.http.routers.vault.entrypoints=websecure-mgmt-vip"
         ]
 
         # This health check is for Vault HA

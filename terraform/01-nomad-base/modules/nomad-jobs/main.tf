@@ -6,10 +6,18 @@ terraform {
     }
   }
 }
-
+        
 resource "nomad_job" "traefik" {
     jobspec = templatefile("${path.root}/templates/traefik.nomad.hcl.tpl", {
-        internal_domain = var.internal_domain
+        internal_domain   = var.internal_domain
+        traefik_yaml      = templatefile("${path.root}/templates/traefik.yaml.tpl", {
+          user_virtual_ip = var.user_virtual_ip
+          mgmt_virtual_ip = var.mgmt_virtual_ip
+        })
+        dynamic_yaml     = templatefile("${path.root}/templates/dynamic.yaml.tpl", {
+          user_virtual_ip = var.user_virtual_ip
+          mgmt_virtual_ip = var.mgmt_virtual_ip
+        })
     })
 
     detach = false

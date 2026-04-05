@@ -33,14 +33,14 @@ resource "proxmox_virtual_environment_file" "cloud_init" {
             # Nomad configuration
             nomad_config = templatefile("${path.module}/../../templates/nomad.hcl.tpl", {
                 node_name = "${each.key}.${var.internal_domain}"
-                bind_addr = "0.0.0.0"
+                bind_addr = "${each.value.nomad_ip}"
                 bootstrap_expect = length(local.node_names)
                 retry_join = local.all_ips
                 internal_domain = var.internal_domain
             })
             consul_config = templatefile("${path.module}/../../templates/consul.hcl.tpl", {
                 node_name = "${each.key}.${var.internal_domain}"
-                bind_addr = "0.0.0.0"
+                bind_addr = "${each.value.nomad_ip}"
                 bootstrap_expect = length(local.node_names)
                 retry_join = local.all_ips
                 internal_domain = var.internal_domain
@@ -58,6 +58,8 @@ resource "proxmox_virtual_environment_file" "cloud_init" {
             resolved_config = templatefile("${path.module}/../../templates/resolved.conf.tpl", {
               vm_gateway = var.vm_gateway
             })
+            # Add Docker registry cache
+            docker_daemon_json = templatefile("${path.module}/../../templates/docker-registry.json.tpl", {})
         })
         file_name = "${each.key}-cloud-init.yaml"
     }

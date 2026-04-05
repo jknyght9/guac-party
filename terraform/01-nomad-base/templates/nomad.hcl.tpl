@@ -1,7 +1,7 @@
 datacenter = "dc1"
 data_dir   = "/opt/nomad/data"
 name       = "${node_name}"
-bind_addr  = "${bind_addr}"
+#bind_addr  = "${bind_addr} 127.0.0.1"
 
 # Each nomad node will point internally at its own vault instance
 vault {
@@ -15,6 +15,12 @@ vault {
   }
 }
 
+addresses {
+  http = "${bind_addr} 127.0.0.1"
+  rpc  = "${bind_addr}"
+  serf = "${bind_addr}"
+}
+
 consul {
   address = "127.0.0.1:8500"
 }
@@ -26,7 +32,7 @@ server {
   server_join {
     retry_join = [%{ for i, ip in retry_join ~}"${ip}"%{ if i < length(retry_join) - 1 ~}, %{ endif ~}%{ endfor ~}]
   }
-  oidc_issuer = "http://172.17.0.1:4646"
+  oidc_issuer = "http://${bind_addr}:4646"
 
 }
 

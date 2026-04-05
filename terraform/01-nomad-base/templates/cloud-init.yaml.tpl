@@ -28,6 +28,10 @@ write_files:
     permissions: "0644"
     content: |
       ${indent(6, resolved_config)}
+  - path: /etc/docker/daemon.json
+    permissions: "0644"
+    content: |
+      ${indent(6, docker_daemon_json)}
 
 runcmd:
   - systemctl restart nomad
@@ -37,3 +41,4 @@ runcmd:
   - systemctl restart keepalived
   - systemctl enabled keepalived
   - systemctl restart systemd-resolved
+  - systemctl restart docker
