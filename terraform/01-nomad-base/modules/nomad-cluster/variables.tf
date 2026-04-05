@@ -45,12 +45,12 @@ variable "ssh_public_key" {
 
 variable "vm_cores" {
   type    = number
-  default = 4
+  default = 24
 }
 
 variable "vm_memory" {
   type    = number
-  default = 8192
+  default = 32768
 }
 
 variable "vm_disk_size" {

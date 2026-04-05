@@ -2,6 +2,12 @@ job "guacamole-cluster" {
   # 'system' ensures it runs on EVERY node in your cluster
   type = "system"
 
+  # This is for testing, so I don't have to wait for each node to load.
+  constraint {
+    attribute = "$${node.unique.name}"
+    value = "saruman.internal"
+  }
+
   group "guacamole-stack" {
     vault {
       role = "guacamole-role"
@@ -26,6 +32,37 @@ job "guacamole-cluster" {
       }
     }
 
+    # Copy our local root CA to guacamole and use keytool to appened it to
+    # A copy of the existing certificate store
+    task "ca-inject" {
+      lifecycle {
+        hook    = "prestart"
+        sidecar = false
+      }
+
+      driver = "docker"
+
+      config {
+        image = "guacamole/guacamole:latest"
+        entrypoint = ["/bin/sh"]
+        
+        args = ["-c", <<-EOT
+          cp $JAVA_HOME/lib/security/cacerts $${NOMAD_ALLOC_DIR}/data/cacerts && \
+          keytool -importcert -v -trustcacerts -alias "internal-ca" -file $${NOMAD_ALLOC_DIR}/data/root_ca.crt \
+          -keystore $${NOMAD_ALLOC_DIR}/data/cacerts -storetype PKCS12 -storepass changeit -noprompt
+          chmod 644 $${NOMAD_ALLOC_DIR}/data/cacerts     
+          EOT
+        ]
+      }
+      
+      template {
+        data = <<EOH
+{{ with secret "pki_root/cert/ca_chain" }}{{ .Data.certificate }}{{ end }}
+EOH
+        destination = "$${NOMAD_ALLOC_DIR}/data/root_ca.crt"
+      }
+    }
+
     # Task 2: The Web UI (Java-based)
     task "guacamole" {
       driver = "docker"
@@ -34,7 +71,7 @@ job "guacamole-cluster" {
         ports = ["http"]
         dns_servers = ["172.17.0.1"]
       }
-     
+      
       env {
         # Point to the guacd sitting right next to it
         GUACD_HOSTNAME = "172.17.0.1"
@@ -42,6 +79,24 @@ job "guacamole-cluster" {
         LOGBACK_LEVEL = "debug"
       }
       
+      template {
+        data = <<EOH
+{{ with secret "secret/data/guacamole/oidc" }}
+WEBAPP_CONTEXT=ROOT
+OPENID_AUTHORIZATION_ENDPOINT="https://authentik.internal/application/o/authorize/"
+OPENID_CLIENT_ID={{ .Data.data.client_id }}
+OPENID_ISSUER="https://authentik.internal/application/o/guacamole/"
+OPENID_JWKS_ENDPOINT="https://authentik.internal/application/o/guacamole/jwks/"
+OPENID_REDIRECT_URI="https://guacamole.saruman.internal/"
+OPENID_USERNAME_CLAIM_TYPE="preferred_username"
+OPENID_ENABLED="true"
+JAVA_OPTS="-Djavax.net.ssl.trustStore=/alloc/data/cacerts -Djavax.net.ssl.trustStoreType=PKCS12 -Djavax.net.ssl.trustStorePassword=changeit"
+{{ end }}
+EOH
+        destination = "secrets/oidc.env"
+        env = true
+      }
+
       template {
         # Database (Shared across all nodes)
         data = <<EOH
