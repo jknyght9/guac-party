@@ -50,7 +50,8 @@ job "traefik" {
                 tls: {}
             dashboard:
               address: ":8081"
-            postgres-tcp: ":5432"
+            postgres-tcp: 
+              address: ":5432"
 
           api:
             dashboard: true
