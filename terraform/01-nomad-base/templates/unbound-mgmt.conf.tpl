@@ -1,19 +1,21 @@
 server:
 
-    interface: 0.0.0.0
+    interface: 127.0.0.1
+    interface: {{ env "NOMAD_IP_dns_mgmt" }}
+    interface: ${virtual_ip}
     port: 53
     
     access-control: 127.0.0.0/8 allow
     access-control: 192.168.0.0/16 allow
     access-control: 172.16.0.0/12 allow # Docker Bridge
 
-    # General Tweaks for Recursion
+    # General Tweaks
     do-ip4: yes
     do-udp: yes
     do-tcp: yes
 
-    # Allow unbound to automatically pickup virtual_ip as assigned
-    interface-automatic: yes
+   
+    interface-automatic: no
 
     # Hide identity for security
     hide-identity: yes
@@ -36,7 +38,7 @@ local-data: "${split(" ", entry)[0]} IN A ${split(" ", entry)[1]}"
     local-data: "traefik.${internal_domain}. IN A ${virtual_ip}"
     local-data: "consul.${internal_domain}. IN A ${virtual_ip}"
     local-data: "postgres.${internal_domain}. IN A ${virtual_ip}"
-    local-data: "authentik.${internal_domain}. IN A {virtual_ip}"
+    local-data: "authentik.${internal_domain}. IN A ${virtual_ip}"
 
     # Allow Unbound to talk to the local Consul port
     do-not-query-localhost: no

@@ -12,7 +12,24 @@ variable "mgmt_gateway" {
     description = "The ip address of the management gateway"
 }
 
-variable "virtual_ip" {
+variable "mgmt_virtual_ip" {
     type = string
     description = "The virtual ip address with automatic failover"
+}
+
+variable "mgmt_subnet_cidr" {
+  type        = string
+  description = "Subnet CIDR for prefix length calculation"
+  default = "192.168.100.0/24"
+}
+
+variable "user_virtual_ip" {
+    type = string
+    description = "The virtual ip address of the usernet with automatic failover"
+}
+
+variable "user_subnet_cidr" {
+  type        = string
+  description = "Subnet CIDR for prefix length calculation"
+  default = "192.168.100.0/24"
 }

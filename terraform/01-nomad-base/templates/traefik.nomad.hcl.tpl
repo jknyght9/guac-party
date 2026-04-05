@@ -50,7 +50,7 @@ job "traefik" {
                 tls: {}
             dashboard:
               address: ":8081"
-            postgres-tcp ":5432"
+            postgres-tcp: ":5432"
 
           api:
             dashboard: true
@@ -68,7 +68,7 @@ job "traefik" {
 
             # Look here for dynamic configuration changes
             file:
-              filename: "/etc/traefik/dynamic.yaml"
+              directory: "/etc/traefik/dynamic/"
               watch: true
 
           log:
@@ -94,9 +94,9 @@ job "traefik" {
           http:
             serversTransports:
               internal-secure:
-              insecureSkipVerify: true
-                rootcas:
-                - "/etc/traefik/dynamic/certs/root_ca.crt"
+                insecureSkipVerify: true
+                rootCAs:
+                  - "/etc/traefik/dynamic/certs/root_ca.crt"
             routers:
               nomad-local-{{ env "node.unique.name" }}:
                 rule: Host(`nomad.{{ env "node.unique.name" }}`) || Host(`{{ env "node.unique.name" }}`)

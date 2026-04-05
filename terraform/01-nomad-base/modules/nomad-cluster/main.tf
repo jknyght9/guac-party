@@ -166,7 +166,11 @@ resource "proxmox_virtual_environment_vm" "nomad" {
             ],
             # Create Vault directory and set permissions.
             "sudo mkdir -p /opt/vault/data",
-            "sudo chown -R 100:100 /opt/vault"
+            "sudo chown -R 100:100 /opt/vault",
+            # Enabled nonlocal ip binding for keepalived
+            "sudo sysctl net.ipv4.ip_nonlocal_bind=1",
+            # Persist through reboots
+            "sudo sh -c 'echo \"net.ipv4.ip_nonlocal_bind=1\" >> /etc/sysctl.d/98-keepalived.conf'"
         ])
 
         connection {

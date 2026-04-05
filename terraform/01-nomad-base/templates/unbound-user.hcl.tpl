@@ -1,4 +1,4 @@
-job "unbound" {
+job "unbound-user" {
   datacenters = ["dc1"]
   type        = "system"
 
@@ -13,8 +13,14 @@ job "unbound" {
   }
 
   group "dns" {
+
     network {
-      port "dns" { static = 53 }
+      port "dns_user" {
+        static = 53
+        to = 53
+        host_network = "public"
+        ignore_collision = true
+      }
     }
 
     task "unbound" {

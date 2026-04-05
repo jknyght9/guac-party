@@ -47,6 +47,17 @@ client {
     path      = "/opt/volumes/guacamole-db"
     read_only = false
   }
+
+  # Define different network namespaces for each interface
+  host_network "management" {
+    interface = "eth0"
+  }
+  host_network "public" {
+    interface = "eth1"
+  }
+  host_network "range" {
+    interface = "eth2"
+  }
 }
 
 plugin "docker" {

@@ -53,16 +53,6 @@ resource "random_password" "keepalived_user_passwd" {
     special = false
 }
 
-# TODO, integrate proxmox SDN as part of the base latter
-# SDN zone + VNet + subnet (for guest VMs, out of scope but provisioned)
-# module "proxmox_sdn" {
-#  source = "./modules/proxmox-sdn"
-#
-#  zone_name   = var.sdn_zone_name
-#  vnet_name   = var.sdn_vnet_name
-#  subnet_cidr = var.sdn_subnet_cidr
-#  gateway     = var.sdn_gateway
-#}
 
 module "nomad_cluster" {
   source = "./modules/nomad-cluster"
@@ -74,7 +64,7 @@ module "nomad_cluster" {
   internal_domain = var.internal_domain
   vm_gateway = var.vm_gateway
   vm_bridge  = var.vm_bridge
-  subnet_cidr = var.subnet_cidr
+  subnet_cidr = var.mgmt_subnet_cidr
 
   template_node = var.template_node
 
@@ -93,8 +83,12 @@ module "nomad-jobs" {
 
   unbound_node_records = local.unbound_node_records
   internal_domain = var.internal_domain
-  virtual_ip = var.mgmt_virtual_ip
+  mgmt_subnet_cidr = var.mgmt_subnet_cidr
+  mgmt_virtual_ip = var.mgmt_virtual_ip
   mgmt_gateway = var.vm_gateway
+
+  user_subnet_cidr = var.user_subnet_cidr
+  user_virtual_ip = var.user_virtual_ip
 }
 
 module "proxmox-net" {
