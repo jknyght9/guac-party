@@ -1,6 +1,7 @@
 server:
     # Bind ONLY to the User Network IP
     interface: {{ env "NOMAD_IP_dns_user" }}
+    interface: ${virtual_ip}
     port: 53
     
     # Only allow the User VLAN to query this instance

@@ -50,7 +50,9 @@ resource "proxmox_virtual_environment_file" "cloud_init" {
             keepalived_config = templatefile("${path.module}/../../templates/keepalived.conf.tpl", {
                 mgmt_virtual_ip = var.mgmt_virtual_ip
                 mgmt_passwd     = var.mgmt_passwd
-                priority        = (index(local.node_names, each.key) * 20)
+                user_virtual_ip = var.user_virtual_ip
+                user_passwd     = var.user_passwd                
+                priority        = (100 - index(local.node_names, each.key) * 20)
             })
             # Resolved configuration
             resolved_config = templatefile("${path.module}/../../templates/resolved.conf.tpl", {
