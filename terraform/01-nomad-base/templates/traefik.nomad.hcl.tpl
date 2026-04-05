@@ -88,8 +88,8 @@ job "traefik" {
             stores:
               default:
                 defaultCertificate:
-                  certFile: /certs/master.crt
-                  keyFile: /certs/master.key
+                  certFile: /etc/traefik/dynamic/certs/master.crt
+                  keyFile: /etc/traefik/dynamic/certs/master.key  
 
           http:
             serversTransports:

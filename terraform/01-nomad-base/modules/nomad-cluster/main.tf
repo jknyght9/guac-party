@@ -63,6 +63,7 @@ resource "proxmox_virtual_environment_file" "cloud_init" {
 
 # 2. Clone all Nomad nodes
 resource "proxmox_virtual_environment_vm" "nomad" {
+
     for_each = var.proxmox_nodes
     name = "nomad-${each.key}.${var.internal_domain}"
     node_name     = "${each.key}"
@@ -91,17 +92,40 @@ resource "proxmox_virtual_environment_vm" "nomad" {
         datastore_id = var.storage_pool
         iothread = true
     }
-
+    # Management Bridge
     network_device {
         bridge = var.vm_bridge
         model = "virtio"
     }
+    # User Bridge
+    network_device {
+      bridge = var.user_bridge_name
+      model = "virtio"
+    }
+    # Cyber Range Bridge
+    network_device {
+      bridge = var.range_bridge_name
+      model = "virtio"
+    }
 
     initialization {
-        ip_config {
+        # Management Network
+        ip_config {            
             ipv4 {
                 address = "${each.value.nomad_ip}/${local.prefix_length}"
                 gateway = var.vm_gateway
+            }
+        }
+        # User Network
+        ip_config {
+            ipv4 {                # Yes this is ugly, deal with it
+              address = "10.30.0.${element(split(".", each.value.nomad_ip), 3)}/${local.prefix_length}"
+            }
+        }
+        # Range Network
+        ip_config {
+            ipv4 {
+              address = "10.40.0.${element(split(".", each.value.nomad_ip), 3)}/${local.prefix_length}"
             }
         }
         dns {

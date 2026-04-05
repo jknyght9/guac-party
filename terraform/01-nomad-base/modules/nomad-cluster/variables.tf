@@ -17,6 +17,27 @@ variable "mgmt_passwd" {
     description = "Shared passwd used for the Keepalived management network."
 }
 
+variable "user_bridge_name" {
+  type = string
+  description = "Bridge name of the Usernet"
+}
+
+variable "user_virtual_ip" {
+  type = string
+  description = "Virtual IP address of the cluster on the User Net"
+  default = "10.30.0.100"
+}
+
+variable "user_passwd" {
+  type = string
+  description = "Shared passwd used for the Keepalived user network."  
+}
+
+variable "range_bridge_name" {
+  type = string
+  description = "Bridge name of the Cyber Range"
+}
+
 variable "internal_domain" {
   type = string
   description = "Top level domain"
@@ -45,7 +66,7 @@ variable "ssh_public_key" {
 
 variable "vm_cores" {
   type    = number
-  default = 24
+  default = 20
 }
 
 variable "vm_memory" {

@@ -2,7 +2,7 @@ terraform {
   required_providers {
     proxmox = {
       source  = "bpg/proxmox"
-      version = "0.99.0"
+      version = "0.100.0"
     }
     random = {
       source  = "hashicorp/random"
@@ -44,9 +44,13 @@ locals {
 }
 
 resource "random_password" "keepalived_mgmt_passwd" {
-    length = 18
-    special = true
-    override_special = "!#$%&()-_+[]<>?"
+    length = 24
+    special = false
+}
+
+resource "random_password" "keepalived_user_passwd" {
+    length = 24
+    special = false
 }
 
 # TODO, integrate proxmox SDN as part of the base latter
@@ -62,6 +66,7 @@ resource "random_password" "keepalived_mgmt_passwd" {
 
 module "nomad_cluster" {
   source = "./modules/nomad-cluster"
+  depends_on = [ module.proxmox-net ]
 
   proxmox_nodes = var.proxmox_nodes
   ssh_public_key = var.ssh_public_key
@@ -75,6 +80,11 @@ module "nomad_cluster" {
 
   mgmt_virtual_ip = var.mgmt_virtual_ip
   mgmt_passwd = random_password.keepalived_mgmt_passwd.result
+
+  user_passwd = random_password.keepalived_user_passwd.result
+  user_bridge_name = module.proxmox-net.usernet_bridge_name
+
+  range_bridge_name = module.proxmox-net.range_bridge_name
 }
 
 module "nomad-jobs" {
@@ -85,6 +95,11 @@ module "nomad-jobs" {
   internal_domain = var.internal_domain
   virtual_ip = var.mgmt_virtual_ip
   mgmt_gateway = var.vm_gateway
+}
+
+module "proxmox-net" {
+  source = "./modules/proxmox-net"
+  proxmox_nodes = var.proxmox_nodes
 }
 
 # These credentials need to survive layer 02 being destryoed
