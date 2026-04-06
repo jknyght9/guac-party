@@ -57,6 +57,7 @@ resource "nomad_job" "vault" {
     jobspec = templatefile("${path.root}/templates/vault.nomad.hcl.tpl", {
         # Only inform vault of the nomad records, avoids repeated addresses
         node_records   = [ for r in var.unbound_node_records : r ]
+        node_count = length(var.unbound_node_records)
         internal_domain = var.internal_domain
     })
 

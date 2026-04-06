@@ -3,20 +3,22 @@ job "vault" {
   type        = "service"
 
   group "vault" {
-    count = 3
+
+    count = ${node_count}
 
     constraint {
       operator = "distinct_hosts"
       value    = "true"
     }
-
     network {
       mode = "host"
-      port "api" {
+      port "api_mgmt" {
         static = 8200
+        host_network = "management"
       }
-      port "cluster" {
+      port "cluster_mgmt" {
         static = 8201
+        host_network = "management"
       }
     }
 
@@ -25,7 +27,7 @@ job "vault" {
 
       config {
         image = "hashicorp/vault:1.21.3"
-        ports = ["api", "cluster"]
+        network_mode = "host"
         
         cap_add = ["IPC_LOCK"] 
         
@@ -37,8 +39,8 @@ job "vault" {
       template {
         data = <<-EOF
           ui            = true
-          api_addr      = "http://{{ env "NOMAD_ADDR_api" }}"
-          cluster_addr  = "https://{{ env "NOMAD_ADDR_cluster" }}"
+          api_addr      = "http://{{ env "NOMAD_ADDR_api_mgmt" }}"
+          cluster_addr  = "https://{{ env "NOMAD_ADDR_cluster_mgmt" }}"
           
           # We keep this true because IPC_LOCK handles it, or you can disable it if testing
           disable_mlock = true 
@@ -59,7 +61,7 @@ job "vault" {
           }
 
           listener "tcp" {
-            address     = "0.0.0.0:8200"
+            address     = "{{ env "NOMAD_ADDR_api_mgmt" }}"
             tls_disable = true
           }
         EOF
@@ -80,7 +82,7 @@ job "vault" {
 
       service {
         name     = "vault"
-        port     = "api"
+        port     = "api_mgmt"
         provider = "nomad"
 
         tags = [
