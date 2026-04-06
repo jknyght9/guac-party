@@ -32,6 +32,10 @@ write_files:
     permissions: "0644"
     content: |
       ${indent(6, docker_daemon_json)}
+  - path: /etc/ssh/sshd_config
+    permissions: "0644"
+    content: |
+      ${indent(6, sshd_config)}
 
 runcmd:
   - systemctl restart nomad
@@ -42,3 +46,4 @@ runcmd:
   - systemctl enabled keepalived
   - systemctl restart systemd-resolved
   - systemctl restart docker
+  - systemctl restart sshd

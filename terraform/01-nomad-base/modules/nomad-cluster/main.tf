@@ -29,6 +29,9 @@ resource "proxmox_virtual_environment_file" "cloud_init" {
     source_raw {
         data = templatefile("${path.module}/../../templates/cloud-init.yaml.tpl", {
             hostname = "nomad-${each.key}.${var.internal_domain}"
+            sshd_config = templatefile("${path.module}/../../templates/sshd_config.tpl", {
+              nomad_ip = "${each.value.nomad_ip}"
+            })
             ssh_public_key = var.ssh_public_key
             # Nomad configuration
             nomad_config = templatefile("${path.module}/../../templates/nomad.hcl.tpl", {
