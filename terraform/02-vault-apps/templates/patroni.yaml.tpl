@@ -7,11 +7,11 @@ consul:
   register_service: true
 
 restapi:
-  listen: 0.0.0.0:8008
+  listen: {{ env "NOMAD_IP_patroni_http_mgmt" }}:8008
   connect_address: {{ env "attr.unique.network.ip-address" }}:8008
 
 postgresql:
-  listen: 0.0.0.0:5433
+  listen: {{ env "NOMAD_IP_postgres_tcp_mgmt" }}:5433
   connect_address: {{ env "attr.unique.network.ip-address" }}:5433
   data_dir: /data/postgres/base
   bin_dir: /usr/lib/postgresql/16/bin

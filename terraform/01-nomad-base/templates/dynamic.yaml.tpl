@@ -51,7 +51,7 @@ http:
 tcp:
   routers:
     postgres:
-      entryPoints: ["postgres-tcp"]
+      entryPoints: ["postgres-vip", "postgres-local"]
       rule: "HostSNI(`*`)"
       service: "postgres-master"
 

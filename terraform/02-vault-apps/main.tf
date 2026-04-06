@@ -35,7 +35,7 @@ provider "authentik" {
 }
 
 locals {
-  nomad_jwt_issuer = "http://172.17.0.1:4646"
+  nomad_jwt_issuer = "http://127.0.0.1:4646"
   guacamole_admin_password_sha = sha256(var.guacamole_admin_password)
 }
 

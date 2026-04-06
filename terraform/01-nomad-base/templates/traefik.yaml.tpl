@@ -46,8 +46,10 @@ entryPoints:
     address: "${user_virtual_ip}:443"
     http:
       tls: {}
-  postgres-tcp: 
-    address: "{{ env "NOMAD_IP_postgres_tcp" }}:5432"
+  postgres-vip: 
+    address: "${mgmt_virtual_ip}:5432"
+  postgres-local:
+    address: "{{ env "NOMAD_IP_https_mgmt" }}:5432"
   traefik:
     address: "127.0.0.1:8080"
 

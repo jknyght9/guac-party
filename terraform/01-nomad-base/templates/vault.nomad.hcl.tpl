@@ -64,6 +64,10 @@ job "vault" {
             address     = "{{ env "NOMAD_ADDR_api_mgmt" }}"
             tls_disable = true
           }
+          listener "tcp" {
+            address = "127.0.0.1:8200"
+            tls_disable = true
+          }
         EOF
 
         destination = "local/vault.hcl"

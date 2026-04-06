@@ -32,7 +32,7 @@ server {
   server_join {
     retry_join = [%{ for i, ip in retry_join ~}"${ip}"%{ if i < length(retry_join) - 1 ~}, %{ endif ~}%{ endfor ~}]
   }
-  oidc_issuer = "http://${bind_addr}:4646"
+  oidc_issuer = "http://127.0.0.1:4646"
 
 }
 

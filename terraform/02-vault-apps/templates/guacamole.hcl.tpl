@@ -121,7 +121,7 @@ EOH
           "traefik.enable=true",          
           # NODE-SPECIFIC URL (e.g., guacamole.saruman.internal)
           "traefik.http.routers.guac-$${attr.unique.consul.name}.rule=Host(\"guacamole.$${attr.unique.consul.name}.internal\")",
-          "traefik.http.routers.guac-$${attr.unique.consul.name}.entrypoints=websecure",
+          "traefik.http.routers.guac-$${attr.unique.consul.name}.entrypoints=websecure-mgmt,websecure-user",
           "traefik.http.services.guac-$${attr.unique.consul.name}.loadbalancer.server.port=8085",          
           
           # Shared sticky backend
