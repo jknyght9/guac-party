@@ -102,21 +102,6 @@ ${dynamic_yaml}
           "traefik.http.services.nomad.loadbalancer.server.port=4646",
         ]
       }
-
-      # Traefik dashboard
-      service {
-        name     = "traefik-dashboard"
-        port     = "http_mgmt"
-        provider = "nomad"
-
-        tags = [
-          "traefik.enable=true",
-          "traefik.http.routers.dashboard-mgmt.rule=Host(`traefik.${internal_domain}`)",
-          "traefik.http.routers.dashboard-mgmt.entrypoints=websecure-mgmt-vip",
-          "traefik.http.routers.dashboard-mgmt.tls=true",
-          "traefik.http.routers.dashboard-mgmt.service=api@internal" 
-        ]
-      }
     }
   }
 }

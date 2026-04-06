@@ -14,6 +14,12 @@ http:
         - "/etc/traefik/dynamic/certs/root_ca.crt"
 
   routers:
+    # Traefik UI (Cluster Access)
+    traefik-dashboard:
+      rule: "Host(`traefik.internal`)"
+      entryPoints: ["websecure-mgmt-vip"]
+      tls: {}
+      service: api@internal
     # Nomad UI (Direct Node Access)
     nomad-local-{{ env "attr.unique.consul.name" }}:
       rule: "Host(`nomad.{{ env "node.unique.name" }}`) || Host(`{{ env "node.unique.name" }}`)"

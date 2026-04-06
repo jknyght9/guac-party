@@ -48,6 +48,8 @@ entryPoints:
       tls: {}
   postgres-tcp: 
     address: "{{ env "NOMAD_IP_postgres_tcp" }}:5432"
+  traefik:
+    address: "127.0.0.1:8080"
 
 api:
   dashboard: true
