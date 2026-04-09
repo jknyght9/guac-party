@@ -1,4 +1,10 @@
-write-files:
+#cloud-config
+hostname: ${hostname}
+
+package_update: false
+package_upgrade: false
+
+write_files:
   - path: /etc/dnsmasq.conf
     permissions: '0644'
     content: |
@@ -7,8 +13,3 @@ write-files:
     permissions: '0744'
     content: |
       ${indent(6, setup_firewall)}
-
-run-cmd:
-  - rc-update add local default
-  - rc-service local start
-  - rc-service dnsmasq restart
