@@ -182,7 +182,7 @@ resource "guacamole_connection_rdp" "kali_rdp" {
     proxmox_virtual_environment_vm.alpine_clones
     ]
 
-  name = "Kali-Workspae-${each.key}"
+  name = "Kali-${each.key}"
   parent_identifier = "ROOT"
   
   attributes {
