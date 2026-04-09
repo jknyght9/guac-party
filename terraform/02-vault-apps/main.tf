@@ -119,6 +119,7 @@ module "user-apps" {
   authentik_cert = module.vault-pki.authentik_certificate
   authentik_key = module.vault-pki.authentik_private_key
   authentik_token = random_bytes.authentik_token.hex
+  mgmt_virtual_ip = local.management_virtual_ip
 }
 
 # Authentik recommends using 60 byte base64 for secret key

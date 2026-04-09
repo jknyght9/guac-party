@@ -39,6 +39,7 @@ local-data: "${split(" ", entry)[0]} IN A ${split(" ", entry)[1]}"
     local-data: "consul.${internal_domain}. IN A ${virtual_ip}"
     local-data: "postgres.${internal_domain}. IN A ${virtual_ip}"
     local-data: "authentik.${internal_domain}. IN A ${virtual_ip}"
+    local-data: "guacamole.${internal_domain}. IN A ${virtual_ip}"
 
     # Allow Unbound to talk to the local Consul port
     do-not-query-localhost: no

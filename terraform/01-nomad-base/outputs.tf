@@ -29,12 +29,10 @@ output "postgres_rewind_pw" {
   sensitive = true
 }
 
-#output "sdn_zone" {
-#  description = "SDN zone name"
-#  value       = module.proxmox_sdn.zone_name
-#}
+output "management_virtual_ip" {
+  value = var.mgmt_virtual_ip
+}
 
-#output "sdn_vnet" {
-#  description = "SDN VNet name"
-#  value       = module.proxmox_sdn.vnet_name
-#}
+output "user_virtual_ip" {
+  value = var.user_virtual_ip
+}

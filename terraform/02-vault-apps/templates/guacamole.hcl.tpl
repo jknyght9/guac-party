@@ -3,10 +3,10 @@ job "guacamole-cluster" {
   type = "system"
 
   # This is for testing, so I don't have to wait for each node to load.
-  constraint {
-    attribute = "$${node.unique.name}"
-    value = "saruman.internal"
-  }
+  #constraint {
+  #  attribute = "$${node.unique.name}"
+  #  value = "saruman.internal"
+  #}
 
   group "guacamole-stack" {
     vault {
@@ -14,21 +14,29 @@ job "guacamole-cluster" {
       policies = ["guacamole"]
     }
     network {
-      port "http" {
+      port "http_mgmt" {
         static = 8085
         to = 8080
+        host_network = "management"
       }
-      dns {
-        servers = ["172.17.0.1"]
+      # This port is limited to the range interface eth2, i.e. 10.40.0.0/24
+      # Firewall rules enforced at the hypervisior to only allow tcp 4822 between eth2 & eth0
+      port "guacd_mgmt" {
+        static = 4822
+        host_network = "management"
       }
+      #dns {
+      #  servers = ["172.17.0.1"]
+      #}
     }
     # Task 1: The Proxy Daemon (C-based)
     task "guacd" {
       driver = "docker"
       config {
         image = "guacamole/guacd:latest"
-        network_mode = "host"
+        #network_mode = "host"
         # No ports block needed if using network mode 'host' or side-by-side
+        ports = ["guacd_mgmt"]
       }
     }
 
@@ -68,14 +76,14 @@ EOH
       driver = "docker"
       config {
         image = "guacamole/guacamole:latest"
-        ports = ["http"]
-        dns_servers = ["172.17.0.1"]
+        ports = ["http_mgmt"]
+        extra_hosts = ["authentik.internal:192.168.100.100"]
       }
       
       env {
         # Point to the guacd sitting right next to it
-        GUACD_HOSTNAME = "172.17.0.1"
-        GUACD_PORT     = "4822"
+        GUACD_HOSTNAME = "$${NOMAD_IP_guacd_mgmt}" #"172.17.0.1"
+        GUACD_PORT     = "$${NOMAD_PORT_guacd_mgmt}" #"4822"
         LOGBACK_LEVEL = "debug"
       }
       
@@ -87,7 +95,7 @@ OPENID_AUTHORIZATION_ENDPOINT="https://authentik.internal/application/o/authoriz
 OPENID_CLIENT_ID={{ .Data.data.client_id }}
 OPENID_ISSUER="https://authentik.internal/application/o/guacamole/"
 OPENID_JWKS_ENDPOINT="https://authentik.internal/application/o/guacamole/jwks/"
-OPENID_REDIRECT_URI="https://guacamole.saruman.internal/"
+OPENID_REDIRECT_URI="https://guacamole.{{env "attr.unique.consul.name" }}.internal/"
 OPENID_USERNAME_CLAIM_TYPE="preferred_username"
 OPENID_ENABLED="true"
 JAVA_OPTS="-Djavax.net.ssl.trustStore=/alloc/data/cacerts -Djavax.net.ssl.trustStoreType=PKCS12 -Djavax.net.ssl.trustStorePassword=changeit"
@@ -103,7 +111,7 @@ EOH
 {{ with secret "secret/data/guacamole/auth" }}
 POSTGRESQL_SSL_MODE="disable"
 POSTGRESQL_ENABLED="true"
-POSTGRESQL_HOSTNAME="postgres.internal"
+POSTGRESQL_HOSTNAME="${mgmt_virtual_ip}"
 POSTGRESQL_DATABASE="{{ .Data.data.postgres_database }}"
 POSTGRESQL_USERNAME="{{ .Data.data.postgres_username }}"
 POSTGRESQL_PASSWORD="{{ .Data.data.postgres_password }}"
@@ -115,7 +123,7 @@ EOH
 
       service {
         name = "guac-$${attr.unique.consul.name}"
-        port = "http"
+        port = "http_mgmt"
         
         tags = [
           "traefik.enable=true",          
@@ -127,6 +135,21 @@ EOH
           # Shared sticky backend
           "traefik.http.services.guac-$${attr.unique.consul.name}.loadbalancer.sticky=true",
           "traefik.http.services.guac-$${attr.unique.consul.name}.loadbalancer.sticky.cookie.name=guac_session"
+        ]
+      }
+      service {
+        name = "guac-cluster"
+        port = "http_mgmt"
+
+        tags = [
+          "traefik.enable=true",
+          # Cluster level routers
+          "traefik.http.routers.guac-cluster.rule=Host(`guacamole.internal`)",
+          "traefik.http.routers.guac-cluster.entrypoints=websecure-mgmt-vip,websecure-user-vip",
+          
+          "traefik.http.routers.guac-cluster.service=guacamole-cluster",
+          "traefik.http.services.guacamole-cluster.loadbalancer.sticky=true",
+          "traefik.http.services.guacamole-cluster.loadbalancer.sticky.cookie.name=guac_session"
         ]
       }
     }

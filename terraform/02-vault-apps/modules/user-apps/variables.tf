@@ -20,3 +20,8 @@ variable "authentik_token" {
     description = "Authentik token"
     sensitive = true
 }
+
+variable "mgmt_virtual_ip" {
+    type = string
+    description = "Virtual IP of the Management network"
+}

@@ -24,6 +24,7 @@ server:
     local-data: "traefik.${internal_domain}. IN A ${virtual_ip}"
     local-data: "authentik.${internal_domain}. IN A ${virtual_ip}"
     local-data: "guacamole.${internal_domain}. IN A ${virtual_ip}"
+    local-data: "guacamole.${internal_domain}. IN A ${virtual_ip}"
 
 # Forward everything else to your Management DNS or upstream
 forward-zone:
