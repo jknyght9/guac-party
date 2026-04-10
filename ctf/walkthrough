@@ -1,0 +1,8 @@
+Walk through:
+Get admin access using eternal blue
+make a copy of the SAM and SYSTEM file using a registry command:
+reg save HKLM\SYSTEM C:\system.save
+reg save HKLM\SAM C:\SAM.save <-- this path can by anything
+copy to Kali using netcat or similar
+using hashcat, ophcrack, or similar brute force the password files
+After finding the hashed password submit for a rowdybuck ticket

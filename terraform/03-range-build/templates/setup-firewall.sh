@@ -30,5 +30,8 @@ iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 3390 -j DNAT --to-destinati
 iptables -A FORWARD -i eth0 -o eth1 -p tcp -d 192.168.30.55 --dport 3389 -j ACCEPT
 iptables -A FORWARD -i eth0 -o eth1 -p tcp -d 192.168.30.215 --dport 3389 -j ACCEPT
 
+# Allow DHCP Requests
+iptables -A INPUT -i eth1 -p udp --dport 67:68 --sport 67:68 -j ACCEPT
+
 # Enable NAT
 sysctl net.ipv4.ip_forward=1

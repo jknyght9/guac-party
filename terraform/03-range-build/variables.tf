@@ -56,6 +56,12 @@ variable "kali_credentials" {
   description = "Kali credentials. Same username and password"
 }
 
+variable "windows_credentials" {
+  type = string
+  default = "hackme"
+  description = "Windows credentials. Same username and password"
+}
+
 variable "workshop_users" {
   description = "Map of users to create. Keys are usernames, values are configuration objects."
   type = map(object({

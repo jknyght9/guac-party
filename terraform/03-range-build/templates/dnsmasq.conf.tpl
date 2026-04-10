@@ -1,6 +1,7 @@
 # Bind LAN interface
 interface=eth1
-bind-interfaces
+#bind-interfaces
+bind-dynamic
 
 # Disable DNS resolver
 port=0
@@ -19,4 +20,5 @@ dhcp-option=3,192.168.30.1
 dhcp-option=6,192.168.30.1
 
 # Format: dhcp-host=<MAC_ADDRESS>,<STATIC_IP>,<HOSTNAME>,<LEASE_TIME>
-dhcp-host=${windows_mac},192.168.30.215,windows-target,infinite
+dhcp-host=${windows_mac},192.168.30.215,rowdycon-xp,10m
+dhcp-host=${kali_mac},192.168.30.55,kali-${range_id},10m
