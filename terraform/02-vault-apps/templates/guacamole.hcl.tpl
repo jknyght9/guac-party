@@ -32,6 +32,10 @@ job "guacamole-cluster" {
     # Task 1: The Proxy Daemon (C-based)
     task "guacd" {
       driver = "docker"
+      resources {
+        cpu = 8000
+        memory = 6144
+      }
       config {
         image = "guacamole/guacd:latest"
         #network_mode = "host"
@@ -74,6 +78,10 @@ EOH
     # Task 2: The Web UI (Java-based)
     task "guacamole" {
       driver = "docker"
+      resources {
+        cpu = 4000
+        memory = 3072
+      }
       config {
         image = "guacamole/guacamole:latest"
         ports = ["http_mgmt"]
@@ -86,19 +94,20 @@ EOH
         GUACD_PORT     = "$${NOMAD_PORT_guacd_mgmt}" #"4822"
         LOGBACK_LEVEL = "debug"
       }
-      
+      # Keep OPENID JWKS endpoint the same. Fetch sig from Authentik internally using the keys and CA from Vault
       template {
         data = <<EOH
 {{ with secret "secret/data/guacamole/oidc" }}
 WEBAPP_CONTEXT=ROOT
-OPENID_AUTHORIZATION_ENDPOINT="https://authentik.internal/application/o/authorize/"
+OPENID_AUTHORIZATION_ENDPOINT="https://authentik.eternal.rowdycon.com/application/o/authorize/"
 OPENID_CLIENT_ID={{ .Data.data.client_id }}
-OPENID_ISSUER="https://authentik.internal/application/o/guacamole/"
+OPENID_ISSUER="https://authentik.eternal.rowdycon.com/application/o/guacamole/"
 OPENID_JWKS_ENDPOINT="https://authentik.internal/application/o/guacamole/jwks/"
-OPENID_REDIRECT_URI="https://guacamole.{{env "attr.unique.consul.name" }}.internal/"
+OPENID_REDIRECT_URI="https://guacamole-{{env "attr.unique.consul.name" }}.eternal.rowdycon.com/"
 OPENID_USERNAME_CLAIM_TYPE="preferred_username"
 OPENID_ENABLED="true"
-JAVA_OPTS="-Djavax.net.ssl.trustStore=/alloc/data/cacerts -Djavax.net.ssl.trustStoreType=PKCS12 -Djavax.net.ssl.trustStorePassword=changeit"
+EXTENSION_PRIORITY="openid"
+JAVA_OPTS="-Djavax.net.ssl.trustStore=/alloc/data/cacerts -Djavax.net.ssl.trustStoreType=PKCS12 -Djavax.net.ssl.trustStorePassword=changeit -Xms2g -Xmx2g"
 {{ end }}
 EOH
         destination = "secrets/oidc.env"
@@ -128,13 +137,24 @@ EOH
         tags = [
           "traefik.enable=true",          
           # NODE-SPECIFIC URL (e.g., guacamole.saruman.internal)
-          "traefik.http.routers.guac-$${attr.unique.consul.name}.rule=Host(\"guacamole.$${attr.unique.consul.name}.internal\")",
+          # Internal Routers
+          "traefik.http.routers.guac-$${attr.unique.consul.name}.rule=Host(\"guacamole-$${attr.unique.consul.name}.internal\")",
           "traefik.http.routers.guac-$${attr.unique.consul.name}.entrypoints=websecure-mgmt,websecure-user",
-          "traefik.http.services.guac-$${attr.unique.consul.name}.loadbalancer.server.port=8085",          
+          "traefik.http.routers.guac-$${attr.unique.consul.name}.service=guac-$${attr.unique.consul.name}-svc",
+          "traefik.http.routers.guac-$${attr.unique.consul.name}.tls=true",
+
+          # External Routers
+          "traefik.http.routers.guac-$${attr.unique.consul.name}-ext.rule=Host(\"guacamole-$${attr.unique.consul.name}.eternal.rowdycon.com\")",          
+          "traefik.http.routers.guac-$${attr.unique.consul.name}-ext.entrypoints=websecure-user-vip",
+          "traefik.http.routers.guac-$${attr.unique.consul.name}-ext.service=guac-$${attr.unique.consul.name}-svc",
+          "traefik.http.routers.guac-$${attr.unique.consul.name}-ext.tls=true",
           
-          # Shared sticky backend
-          "traefik.http.services.guac-$${attr.unique.consul.name}.loadbalancer.sticky=true",
-          "traefik.http.services.guac-$${attr.unique.consul.name}.loadbalancer.sticky.cookie.name=guac_session"
+          # Shared Service
+          "traefik.http.services.guac-$${attr.unique.consul.name}-svc.loadbalancer.server.port=8085",
+          #"traefik.http.services.guac-$${attr.unique.consul.name}-svc.loadbalancer.server.scheme=https",
+          "traefik.http.services.guac-$${attr.unique.consul.name}-svc.loadbalancer.serversTransport=internal-secure@file",
+          "traefik.http.services.guac-$${attr.unique.consul.name}-svc.loadbalancer.sticky=true",
+          "traefik.http.services.guac-$${attr.unique.consul.name}-svc.loadbalancer.sticky.cookie.name=guac_session",          
         ]
       }
       service {
@@ -143,11 +163,20 @@ EOH
 
         tags = [
           "traefik.enable=true",
-          # Cluster level routers
+          # Cluster level domains
+          # Intneral Routers
           "traefik.http.routers.guac-cluster.rule=Host(`guacamole.internal`)",
           "traefik.http.routers.guac-cluster.entrypoints=websecure-mgmt-vip,websecure-user-vip",
-          
           "traefik.http.routers.guac-cluster.service=guacamole-cluster",
+          "traefik.http.routers.guac-cluster.tls=true",
+
+          # External Routers
+          "traefik.http.routers.guac-cluster-ext.rule=Host(`guacamole.eternal.rowdycon.com`) || Host(`eternal.rowdycon.com`)",
+          "traefik.http.routers.guac-cluster-ext.entrypoints=websecure-user-vip",
+          "traefik.http.routers.guac-cluster-ext.service=guacamole-cluster",
+          "traefik.http.routers.guac-cluster-ext.tls=true",
+          
+          # Shared Service
           "traefik.http.services.guacamole-cluster.loadbalancer.sticky=true",
           "traefik.http.services.guacamole-cluster.loadbalancer.sticky.cookie.name=guac_session"
         ]

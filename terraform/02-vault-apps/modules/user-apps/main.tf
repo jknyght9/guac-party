@@ -184,15 +184,15 @@ resource "authentik_provider_oauth2" "guacamole" {
   # Add URLS, TODO: make this dynamic using a foreach node
   allowed_redirect_uris = [
     {
-      url = "https://guacamole.saruman.internal/",
+      url = "https://guacamole-saruman.eternal.rowdycon.com/",
       matching_mode = "strict"
     },
     {
-      url = "https://guacamole.sauron.internal/",
+      url = "https://guacamole-sauron.eternal.rowdycon.com/",
       matching_mode = "strict"
     },
     {
-      url = "https://guacamole.smeagol.internal/",
+      url = "https://guacamole-smeagol.eternal.rowdycon.com/",
       matching_mode = "strict"
     }
   ]

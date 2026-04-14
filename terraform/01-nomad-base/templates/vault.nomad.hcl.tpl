@@ -25,6 +25,11 @@ job "vault" {
     task "vault" {
       driver = "docker"
 
+      resources {
+        cpu    = 1500
+        memory = 1024
+      }
+
       config {
         image = "hashicorp/vault:1.21.3"
         network_mode = "host"
@@ -77,11 +82,6 @@ job "vault" {
         VAULT_LOCAL_CONFIG = ""
         SKIP_CHOWN         = "true"
         VAULT_ADDR         = "http://127.0.0.1:8200"
-      }
-
-      resources {
-        cpu    = 500
-        memory = 512
       }
 
       service {

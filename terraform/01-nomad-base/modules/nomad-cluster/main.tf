@@ -216,6 +216,9 @@ resource "null_resource" "gluster_master_init" {
       # Directory structure
       "sudo mkdir -p /mnt/nomad-data/traefik/certs",
       "sudo chmod -R 700 /mnt/nomad-data/traefik/certs",
+      "sudo mkdir -p /mnt/nomad-data/authentik/assets/public",
+      "sudo chown 1000:1000 /mnt/nomad-data/authentik/assets",
+      "sudo chmod ug+rwx /mnt/nomad-data/authentik/assets",
       # Generate certs one time on the master node'
       flatten([
       "sudo sh -c ' \\",

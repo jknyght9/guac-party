@@ -23,6 +23,10 @@ job "postgres-ha" {
     task "patroni" {
       driver = "raw_exec"
       user   = "postgres"
+      resources {
+        cpu = 6000
+        memory = 6144
+      }
 
       env {
         HOME = "/var/lib/postgresql"

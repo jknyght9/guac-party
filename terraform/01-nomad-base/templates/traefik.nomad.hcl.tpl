@@ -31,7 +31,10 @@ job "traefik" {
 
     task "traefik" {
       driver = "docker"
-
+      resources {
+        cpu = 3000
+        memory = 1024
+      }
       config {
         image        = "traefik:v3.6.9"
         ports        = ["http_mgmt", "https_mgmt", "postgres_tcp", "http_user", "https_user"]
@@ -61,11 +64,6 @@ ${dynamic_yaml}
         EOF
 
         destination = "local/dynamic.yaml"
-      }
-
-      resources {
-        cpu    = 200
-        memory = 256
       }
 
       service {

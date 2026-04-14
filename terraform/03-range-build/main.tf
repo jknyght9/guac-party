@@ -12,7 +12,6 @@ terraform {
       source  = "techBeck03/guacamole"
       version = "1.4.1"
     }
-
   }
 }
 
@@ -32,13 +31,11 @@ locals {
       # Range Identifiers, follows a XYZZ VM id pattern
       # X = Template digit, i.e. Kali 8xxx, Alpine 7xxx, Windows 6xxx
       # Y = Node number. Identifies physical Proxmox node
-      # ZZ = Range id, starting at 11
+      # ZZ = Range id, starting at 01
       node_id  = (idx % local.num_nodes) + 1
-      range_id = 11 + idx
-      # A little ugly but works
-      y_zz_suffix = ((((idx % local.num_nodes) + 1) * 100) + (11 + idx)) # Produces 111, 212, 313, etc
+      range_id = 1 + idx
       # VLAN tag follows similar pattern, drops node # for 1000 + range_id
-      vlan_tag = (1000 + ( 11 + idx ))
+      vlan_tag = (1000 + ( 1 + idx ))
 
       # Alpine WAN IP, starts at 101 and continues. 
       router_wan_ip = "${var.range_wan_subnet_prefix}.${101 + idx}"
@@ -102,23 +99,6 @@ resource "proxmox_network_linux_bridge" "vmbr_lan" {
   }
 }
 
-/* # Cloud init for Kali
-resource "proxmox_virtual_environment_file" "cloud_init_kali" {
-  for_each = local.ranges
-  content_type = "snippets"
-  datastore_id = "local"
-  node_name = each.value.node_name
-
-  source_raw {
-    file_name = "Demo-${each.value.range_id}-kali-cloud-init.yaml"
-    data = templatefile("${path.root}/templates/kali-cloud-init.yaml.tpl", {
-      hostname = "kali-${each.value.range_id}"
-      username = var.kali_credentials
-      kali_ip = "${each.value.kali_lan_ip}/24"
-      gateway = each.value.router_lan_ip      
-    })
-  }
-} */
 # Thin clones evenly spread across N number of nodes
 resource "proxmox_virtual_environment_vm" "kali_clones" {
   depends_on = [ time_sleep.wait_for_alpine ]
@@ -324,6 +304,13 @@ resource "authentik_user" "workshop_users" {
   username = each.key
   name = "Workshop User - ${each.key}"
   password = each.value.password
+  groups = [authentik_group.workshop_group.id]
+}
+
+resource "authentik_user" "hondo_user" {
+  username = "HondoL"
+  name = "Hondo Admin"
+  password = var.hondo_passwd
   groups = [authentik_group.workshop_group.id]
 }
 

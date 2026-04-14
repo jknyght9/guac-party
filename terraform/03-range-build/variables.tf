@@ -91,3 +91,8 @@ variable "range_windows_octet" {
   default = "215"
   description = "The host octet for Windows"
 }
+
+variable "hondo_passwd" {
+  type = string
+  description = "Hondo password for authentik"
+}

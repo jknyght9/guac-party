@@ -16,7 +16,7 @@ provider "authentik" {
 }
 
 provider "guacamole" {
-  url = "https://guacamole.saruman.internal" #var.guacamole_url
+  url = "https://guacamole.internal" #var.guacamole_url
   username = var.guacamole_admin_username
   password = var.guacamole_admin_password
   disable_tls_verification = true
