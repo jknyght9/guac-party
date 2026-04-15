@@ -24,6 +24,10 @@ terraform {
       source = "hashicorp/time"
       version = "0.13.1"
     }
+    guacamole = {
+      source  = "techBeck03/guacamole"
+      version = "1.4.1"
+    }
   }
 }
 
@@ -35,7 +39,7 @@ provider "authentik" {
 }
 
 locals {
-  nomad_jwt_issuer = "http://172.17.0.1:4646"
+  nomad_jwt_issuer = "http://127.0.0.1:4646"
   guacamole_admin_password_sha = sha256(var.guacamole_admin_password)
 }
 
@@ -119,6 +123,35 @@ module "user-apps" {
   authentik_cert = module.vault-pki.authentik_certificate
   authentik_key = module.vault-pki.authentik_private_key
   authentik_token = random_bytes.authentik_token.hex
+  mgmt_virtual_ip = local.management_virtual_ip
+}
+
+resource "guacamole_user" "oidc_admin" {
+  depends_on = [ module.user-apps ]
+  username = "akadmin"
+
+  system_permissions = [
+    "ADMINISTER",
+    "CREATE_CONNECTION",
+    "CREATE_CONNECTION_GROUP",
+    "CREATE_SHARING_PROFILE",
+    "CREATE_USER",
+    "CREATE_USER_GROUP"
+  ]
+}
+
+resource "guacamole_user" "hondo_admin" {
+  depends_on = [ module.user-apps ]
+  username = "HondoL"
+
+  system_permissions = [
+    "ADMINISTER",
+    "CREATE_CONNECTION",
+    "CREATE_CONNECTION_GROUP",
+    "CREATE_SHARING_PROFILE",
+    "CREATE_USER",
+    "CREATE_USER_GROUP"
+  ]
 }
 
 # Authentik recommends using 60 byte base64 for secret key

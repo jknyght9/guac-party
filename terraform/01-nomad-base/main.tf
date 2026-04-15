@@ -2,7 +2,7 @@ terraform {
   required_providers {
     proxmox = {
       source  = "bpg/proxmox"
-      version = "0.99.0"
+      version = "0.100.0"
     }
     random = {
       source  = "hashicorp/random"
@@ -44,24 +44,19 @@ locals {
 }
 
 resource "random_password" "keepalived_mgmt_passwd" {
-    length = 18
-    special = true
-    override_special = "!#$%&()-_+[]<>?"
+    length = 24
+    special = false
 }
 
-# TODO, integrate proxmox SDN as part of the base latter
-# SDN zone + VNet + subnet (for guest VMs, out of scope but provisioned)
-# module "proxmox_sdn" {
-#  source = "./modules/proxmox-sdn"
-#
-#  zone_name   = var.sdn_zone_name
-#  vnet_name   = var.sdn_vnet_name
-#  subnet_cidr = var.sdn_subnet_cidr
-#  gateway     = var.sdn_gateway
-#}
+resource "random_password" "keepalived_user_passwd" {
+    length = 24
+    special = false
+}
+
 
 module "nomad_cluster" {
   source = "./modules/nomad-cluster"
+  depends_on = [ module.proxmox-net ]
 
   proxmox_nodes = var.proxmox_nodes
   ssh_public_key = var.ssh_public_key
@@ -69,12 +64,17 @@ module "nomad_cluster" {
   internal_domain = var.internal_domain
   vm_gateway = var.vm_gateway
   vm_bridge  = var.vm_bridge
-  subnet_cidr = var.subnet_cidr
+  subnet_cidr = var.mgmt_subnet_cidr
 
   template_node = var.template_node
 
   mgmt_virtual_ip = var.mgmt_virtual_ip
   mgmt_passwd = random_password.keepalived_mgmt_passwd.result
+
+  user_passwd = random_password.keepalived_user_passwd.result
+  user_bridge_name = module.proxmox-net.usernet_bridge_name
+
+  range_bridge_name = module.proxmox-net.range_bridge_name
 }
 
 module "nomad-jobs" {
@@ -83,8 +83,17 @@ module "nomad-jobs" {
 
   unbound_node_records = local.unbound_node_records
   internal_domain = var.internal_domain
-  virtual_ip = var.mgmt_virtual_ip
+  mgmt_subnet_cidr = var.mgmt_subnet_cidr
+  mgmt_virtual_ip = var.mgmt_virtual_ip
   mgmt_gateway = var.vm_gateway
+
+  user_subnet_cidr = var.user_subnet_cidr
+  user_virtual_ip = var.user_virtual_ip
+}
+
+module "proxmox-net" {
+  source = "./modules/proxmox-net"
+  proxmox_nodes = var.proxmox_nodes
 }
 
 # These credentials need to survive layer 02 being destryoed

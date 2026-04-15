@@ -2,7 +2,9 @@ datacenter = "dc1"
 data_dir   = "/opt/consul/data"
 node_name = "${replace(node_name, "/\\..*$/", "")}"
 bind_addr  = "${bind_addr}"
-client_addr = "0.0.0.0" # So Docker containers can reach it
+client_addr = "${bind_addr} 127.0.0.1" # So Docker containers can reach it
+
+
 
 server = true
 bootstrap_expect = ${bootstrap_expect}

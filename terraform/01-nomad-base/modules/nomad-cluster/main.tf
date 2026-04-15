@@ -29,18 +29,21 @@ resource "proxmox_virtual_environment_file" "cloud_init" {
     source_raw {
         data = templatefile("${path.module}/../../templates/cloud-init.yaml.tpl", {
             hostname = "nomad-${each.key}.${var.internal_domain}"
+            sshd_config = templatefile("${path.module}/../../templates/sshd_config.tpl", {
+              nomad_ip = "${each.value.nomad_ip}"
+            })
             ssh_public_key = var.ssh_public_key
             # Nomad configuration
             nomad_config = templatefile("${path.module}/../../templates/nomad.hcl.tpl", {
                 node_name = "${each.key}.${var.internal_domain}"
-                bind_addr = "0.0.0.0"
+                bind_addr = "${each.value.nomad_ip}"
                 bootstrap_expect = length(local.node_names)
                 retry_join = local.all_ips
                 internal_domain = var.internal_domain
             })
             consul_config = templatefile("${path.module}/../../templates/consul.hcl.tpl", {
                 node_name = "${each.key}.${var.internal_domain}"
-                bind_addr = "0.0.0.0"
+                bind_addr = "${each.value.nomad_ip}"
                 bootstrap_expect = length(local.node_names)
                 retry_join = local.all_ips
                 internal_domain = var.internal_domain
@@ -50,12 +53,16 @@ resource "proxmox_virtual_environment_file" "cloud_init" {
             keepalived_config = templatefile("${path.module}/../../templates/keepalived.conf.tpl", {
                 mgmt_virtual_ip = var.mgmt_virtual_ip
                 mgmt_passwd     = var.mgmt_passwd
-                priority        = (index(local.node_names, each.key) * 20)
+                user_virtual_ip = var.user_virtual_ip
+                user_passwd     = var.user_passwd                
+                priority        = (100 - index(local.node_names, each.key) * 20)
             })
             # Resolved configuration
             resolved_config = templatefile("${path.module}/../../templates/resolved.conf.tpl", {
               vm_gateway = var.vm_gateway
             })
+            # Add Docker registry cache
+            docker_daemon_json = templatefile("${path.module}/../../templates/docker-registry.json.tpl", {})
         })
         file_name = "${each.key}-cloud-init.yaml"
     }
@@ -63,6 +70,7 @@ resource "proxmox_virtual_environment_file" "cloud_init" {
 
 # 2. Clone all Nomad nodes
 resource "proxmox_virtual_environment_vm" "nomad" {
+
     for_each = var.proxmox_nodes
     name = "nomad-${each.key}.${var.internal_domain}"
     node_name     = "${each.key}"
@@ -91,17 +99,40 @@ resource "proxmox_virtual_environment_vm" "nomad" {
         datastore_id = var.storage_pool
         iothread = true
     }
-
+    # Management Bridge
     network_device {
         bridge = var.vm_bridge
         model = "virtio"
     }
+    # User Bridge
+    network_device {
+      bridge = var.user_bridge_name
+      model = "virtio"
+    }
+    # Cyber Range Bridge
+    network_device {
+      bridge = var.range_bridge_name
+      model = "virtio"
+    }
 
     initialization {
-        ip_config {
+        # Management Network
+        ip_config {            
             ipv4 {
                 address = "${each.value.nomad_ip}/${local.prefix_length}"
                 gateway = var.vm_gateway
+            }
+        }
+        # User Network
+        ip_config {
+            ipv4 {                # Yes this is ugly, deal with it
+              address = "10.30.0.${element(split(".", each.value.nomad_ip), 3)}/${local.prefix_length}"
+            }
+        }
+        # Range Network
+        ip_config {
+            ipv4 {
+              address = "10.40.0.${element(split(".", each.value.nomad_ip), 3)}/${local.prefix_length}"
             }
         }
         dns {
@@ -142,7 +173,11 @@ resource "proxmox_virtual_environment_vm" "nomad" {
             ],
             # Create Vault directory and set permissions.
             "sudo mkdir -p /opt/vault/data",
-            "sudo chown -R 100:100 /opt/vault"
+            "sudo chown -R 100:100 /opt/vault",
+            # Enabled nonlocal ip binding for keepalived
+            "sudo sysctl net.ipv4.ip_nonlocal_bind=1",
+            # Persist through reboots
+            "sudo sh -c 'echo \"net.ipv4.ip_nonlocal_bind=1\" >> /etc/sysctl.d/98-keepalived.conf'"
         ])
 
         connection {
@@ -181,6 +216,9 @@ resource "null_resource" "gluster_master_init" {
       # Directory structure
       "sudo mkdir -p /mnt/nomad-data/traefik/certs",
       "sudo chmod -R 700 /mnt/nomad-data/traefik/certs",
+      "sudo mkdir -p /mnt/nomad-data/authentik/assets/public",
+      "sudo chown 1000:1000 /mnt/nomad-data/authentik/assets",
+      "sudo chmod ug+rwx /mnt/nomad-data/authentik/assets",
       # Generate certs one time on the master node'
       flatten([
       "sudo sh -c ' \\",

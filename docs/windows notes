@@ -1,0 +1,24 @@
+Windows XP notes:
+name: hackme
+organization: rowdycon26
+computer-name ROWDYCON-XP
+admin pass: a_f1@g
+your name: hackme
+password:  hackme
+
+Changing created account to name to Administrator, with flag password
+
+using john trim the password dump aquired from samdump2
+you can try to brute force it using john --format=lm hashes.txt, but this will take a long time
+instead, we can reduce the keyspace using a technique known as masking
+Keyspace refers to the number of possible combinations at a given length. 
+Can be calculated using taking the number of different characters to the power of the length of the password.
+example, a password using only numbers upper case letters 5 characters long can be represented as (10+26)^5, or 
+60,466,176 possible combinations.
+
+Windows legacy password hash has a few weaknesses we can use to limit our keyspace,
+1. It caps password length at 7 characters
+2. All lowercase characters are converted to upper case
+3. A secret 3rd thing, I have it on good authority that 2nd character is either a special character or an upper case letter.
+
+john --format=1m -1=?u?d?s -2=?u?s --mask=?1?2?1?1?1?1?1 --min-length=3 --max-length=7 trimmed.txt

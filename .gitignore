@@ -17,8 +17,6 @@ crash.*.log
 **/.tfstate
 **/terraform.tfstate.*
 
-
-
 # Packer
 packer/ubuntu-nomad/output-*
 packer/ubuntu-nomad/packer_cache/

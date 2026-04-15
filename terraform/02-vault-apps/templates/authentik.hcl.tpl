@@ -6,14 +6,18 @@ job "authentik" {
   group "server" {
     
     network {
-      port "http" {
+      mode = "host"
+      port "http_mgmt" {
         static = 9000
+        host_network = "management"
       }
-      port "https" {
+      port "https_mgmt" {
         static = 9443
+        host_network = "management"
       }
-      port "health" {
+      port "health_mgmt" {
         static = 8000
+        host_network = "management"
       }
     }   
 
@@ -23,14 +27,21 @@ job "authentik" {
     }
     service {
       name = "authentik"
-      port = "https"
+      port = "https_mgmt"
       tags = [
         "traefik.enable=true",
-
-        "traefik.http.routers.authentik.entrypoints=websecure",
+        # Internal Routers
+        "traefik.http.routers.authentik.entrypoints=websecure-mgmt-vip,websecure-user-vip",
         "traefik.http.routers.authentik.rule=Host(`authentik.internal`) || Host(`authentik.service.consul`)",        
         "traefik.http.routers.authentik.service=authentik",
         "traefik.http.routers.authentik.tls=true",
+
+        # External Routers
+        "traefik.http.routers.authentik-ext.entrypoints=websecure-user-vip",
+        "traefik.http.routers.authentik-ext.rule=Host(`authentik.eternal.rowdycon.com`)",
+        # Point this router to the same backend service defined below
+        "traefik.http.routers.authentik-ext.service=authentik",
+        "traefik.http.routers.authentik-ext.tls=true",
         
         "traefik.http.services.authentik.loadbalancer.server.scheme=https",
         "traefik.http.services.authentik.loadbalancer.serversTransport=internal-secure@file",
@@ -42,7 +53,7 @@ job "authentik" {
 
       check {
         type     = "http"
-        port     = "http"
+        port     = "http_mgmt"
         path     = "/-/health/live/"
         interval = "10s"
         timeout  = "2s"
@@ -88,7 +99,7 @@ EOH
       driver = "docker"
 
       resources {
-        cpu = 1000
+        cpu = 4000
         memory = 2048
       }
 
@@ -97,6 +108,10 @@ EOH
         #dns_servers = ["172.17.0.1"]
         image = "ghcr.io/goauthentik/server:2026.2"
         args  = ["server"]
+
+        volumes = [
+          "/mnt/nomad-data/authentik/assets:/data/media",
+        ]
       }
       
 
@@ -111,6 +126,9 @@ AUTHENTIK_POSTGRESQL__NAME="{{ .Data.data.db_name }}"
 SSL_CERT_FILE="/alloc/shared/ca-certificates.crt"
 REQUESTS_CA_BUNDLE="/alloc/shared/ca-certificates.crt"
 CURL_CA_BUNDLE=/alloc/shared/ca-certificates.crt
+AUTHENTIK_LISTEN__HTTP={{ env "NOMAD_IP_http_mgmt" }}:9000
+AUTHENTIK_LISTEN__HTTPS={{ env "NOMAD_IP_https_mgmt" }}:9443
+AUTHENTIK_LISTEN__METRICS={{ env "NOMAD_IP_http_mgmt" }}:9300
 {{ end }}
 EOH
         destination = "secrets/config.env"
@@ -164,10 +182,13 @@ EOH
         #dns_servers = ["172.17.0.1"]
         image = "ghcr.io/goauthentik/server:2026.2"
         args  = ["worker"]
+        volumes = [
+          "/mnt/nomad-data/authentik/assets:/data/media",
+        ]
       }
       
       resources {
-        cpu = 1000
+        cpu = 2000
         memory = 2048
       }
 
@@ -190,6 +211,9 @@ AUTHENTIK_BOOTSTRAP_TOKEN="{{ .Data.data.admin_token }}"
 SSL_CERT_FILE="/alloc/shared/ca-certificates.crt"
 REQUESTS_CA_BUNDLE="/alloc/shared/ca-certificates.crt"
 CURL_CA_BUNDLE=/alloc/shared/ca-certificates.crt
+AUTHENTIK_LISTEN__HTTP={{ env "NOMAD_IP_http_mgmt" }}:9000
+AUTHENTIK_LISTEN__HTTPS={{ env "NOMAD_IP_https_mgmt" }}:9443
+AUTHENTIK_LISTEN__METRICS={{ env "NOMAD_IP_http_mgmt" }}:9300
 {{ end }}
 EOH
         destination = "secrets/config.env"

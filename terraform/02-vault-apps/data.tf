@@ -20,4 +20,7 @@ locals { # Use index [0] as the master node
 
     postgres_rewind_user = "rewind"
     postgres_rewind_pw   = data.terraform_remote_state.nomad-base.outputs.postgres_rewind_pw
+
+    management_virtual_ip = data.terraform_remote_state.nomad-base.outputs.management_virtual_ip
+    user_virtual_ip = data.terraform_remote_state.nomad-base.outputs.user_virtual_ip
 }

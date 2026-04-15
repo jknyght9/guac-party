@@ -4,26 +4,40 @@ job "traefik" {
 
   group "traefik" {
     network {
-      port "http" {
+      # --- Management Network (eth0) ---
+      port "http_mgmt" {
         static = 80
+        host_network = "management"
       }
-      port "https" {
+      port "https_mgmt" {
         static = 443
+        host_network = "management"
       }
-      port "dashboard" {
-        static = 8081
+      port "postgres_tcp" {
+        static = 5432
+        host_network = "management"
       }
-      port "api" {
-        static = 8080
+
+      # --- User Network (eth1) ---
+      port "http_user" {
+        static = 80
+        host_network = "public"
+      }
+      port "https_user" {
+        static = 443
+        host_network = "public"
       }
     }
 
     task "traefik" {
       driver = "docker"
-
+      resources {
+        cpu = 3000
+        memory = 1024
+      }
       config {
         image        = "traefik:v3.6.9"
-        ports        = ["http", "https", "dashboard"]
+        ports        = ["http_mgmt", "https_mgmt", "postgres_tcp", "http_user", "https_user"]
         network_mode = "host"
 
         volumes = [
@@ -36,45 +50,7 @@ job "traefik" {
       # Main traefik.yaml
       template {
         data = <<-EOF
-          entryPoints:
-            web:
-              address: ":80"
-              http:
-                redirections:
-                  entryPoint:
-                    to: websecure
-                    scheme: https
-            websecure:
-              address: ":443"
-              http:
-                tls: {}
-            dashboard:
-              address: ":8081"
-            postgres-tcp ":5432"
-
-          api:
-            dashboard: true
-            insecure: true
-
-          providers:
-            nomad:
-              endpoint:
-                address: "http://localhost:4646"
-              exposedByDefault: false
-            consulCatalog:
-              endpoint:
-                address: "http://localhost:8500"
-              exposedByDefault: false
-
-            # Look here for dynamic configuration changes
-            file:
-              filename: "/etc/traefik/dynamic.yaml"
-              watch: true
-
-          log:
-            level: INFO
-
-          accessLog: {}
+${traefik_yaml}
         EOF
 
         destination = "local/traefik.yaml"
@@ -84,74 +60,21 @@ job "traefik" {
       # Used for certs and node level domains
       template {
         data = <<-EOF
-          tls:
-            stores:
-              default:
-                defaultCertificate:
-                  certFile: /certs/master.crt
-                  keyFile: /certs/master.key
-
-          http:
-            serversTransports:
-              internal-secure:
-              insecureSkipVerify: true
-                rootcas:
-                - "/etc/traefik/dynamic/certs/root_ca.crt"
-            routers:
-              nomad-local-{{ env "node.unique.name" }}:
-                rule: Host(`nomad.{{ env "node.unique.name" }}`) || Host(`{{ env "node.unique.name" }}`)
-                entryPoints:
-                  - websecure
-                tls: {}
-                service: nomad-local
-              vault-{{ env "node.unique.name" }}:
-                rule: "Host(`vault.{{ env "node.unique.name" }}`)"
-                entryPoints: ["websecure"]
-                tls: {}
-                service: vault-local
-            services:
-              nomad-local:
-                loadBalancer:
-                  servers:
-                    - url: "http://{{ env "NOMAD_IP_api" }}:4646"
-              vault-local:
-                loadBalancer:
-                  servers:
-                    - url: "http://{{ env "NOMAD_IP_api" }}:8200"
-          tcp:
-            routers:
-              postgres:
-                entryPoints:
-                  - "postgres-tcp"
-                rule: "HostSNI(`*`)"
-                service: "postgres-master"
-            services:
-              postgres-master:
-                loadBalancer:
-                # This tells Traefik to look at the Consul Catalog for 'postgres' + 'master'
-                # Note: Syntax varies slightly if using file provider to point to consul
-              servers:
-                - address: "master.postgres-cluster.service.consul:5433" 
-
+${dynamic_yaml}
         EOF
 
         destination = "local/dynamic.yaml"
       }
 
-      resources {
-        cpu    = 200
-        memory = 256
-      }
-
       service {
         name     = "traefik"
-        port     = "https"
+        port     = "https_mgmt"
         provider = "nomad"
 
         check {
-          type     = "http"
-          path     = "/api/overview"
-          port     = "api"
+          type     = "tcp"
+          #path     = "/api/overview"
+          #port     = "http_mgmt"
           interval = "10s"
           timeout  = "3s"
         }
@@ -164,7 +87,7 @@ job "traefik" {
       # Nomad dashboard
       service {
         name = "nomad-ui"
-        port = "api"
+        port = "http_mgmt"
         provider = "nomad"
         # The regex will handle nomad-[hostname].internal. Querying by hostname will be resolved to the node address from DNS.
         # Traefik just needs to know how handle the requests and pass to localhost correctly. 
@@ -172,24 +95,9 @@ job "traefik" {
           # Cluster Nomad domain
           "traefik.enable=true",
           "traefik.http.routers.nomad.rule=Host(`nomad.${internal_domain}`)",
-          "traefik.http.routers.nomad.entrypoints=websecure",
+          "traefik.http.routers.nomad.entrypoints=websecure-mgmt-vip",
           "traefik.http.routers.nomad.tls=true",
           "traefik.http.services.nomad.loadbalancer.server.port=4646",
-        ]
-      }
-
-      # Traefik dashboard
-      service {
-        name     = "traefik-dashboard"
-        port     = "dashboard"
-        provider = "nomad"
-
-        tags = [
-          "traefik.enable=true",
-          "traefik.http.routers.dashboard.rule=Host(`traefik.${internal_domain}`)",
-          "traefik.http.routers.dashboard.entrypoints=websecure",
-          "traefik.http.routers.dashboard.tls=true",
-          "traefik.http.routers.dashboard.service=api@internal" 
         ]
       }
     }

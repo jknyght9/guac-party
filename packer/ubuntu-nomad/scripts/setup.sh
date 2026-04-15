@@ -34,6 +34,18 @@ systemctl disable postgresql
 systemctl enable docker
 usermod -aG docker ubuntu
 
+# Configure correct time zone and NTP sync
+echo "Setting Timezone..."
+sudo ln -fs /usr/share/zoneinfo/America/Chicago /etc/localtime
+sudo dpkg-reconfigure -f noninteractive tzdata
+
+# Configure NTP server
+echo "Configuring NTP..."
+sudo apt-get install -y systemd-timesyncd
+sudo sed -i 's/#NTP=/NTP=pool.ntp.org/g' /etc/systemd/timesyncd.conf
+sudo systemctl enable systemd-timesyncd
+
+
 echo "=== Installing HashiCorp Nomad ==="
 
 # Add HashiCorp GPG key and repository
@@ -45,7 +57,6 @@ echo \
   $(. /etc/os-release && echo "$VERSION_CODENAME") main" | \
   tee /etc/apt/sources.list.d/hashicorp.list > /dev/null
 
-apt-get update
 apt-get install -y nomad
 apt-get install -y consul
 

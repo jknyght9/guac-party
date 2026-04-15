@@ -39,12 +39,6 @@ variable "vm_bridge" {
   default = "vmbr0"
 }
 
-variable "subnet_cidr" {
-  type        = string
-  description = "Subnet CIDR for prefix length calculation"
-  default = "192.168.100.0/24"
-}
-
 variable "template_node" {
   type = string
   description = "The hostname of the Proxmox node holding the template"
@@ -57,7 +51,25 @@ variable "internal_domain" {
   description = "Top level domain"
 }
 
+variable "mgmt_subnet_cidr" {
+  type        = string
+  description = "Subnet CIDR for prefix length calculation"
+  default = "192.168.100.0/24"
+}
+
 variable "mgmt_virtual_ip" {
     type = string
     description = "Virtual IP address of the Cluster. The shared ip address with automatic failover"
+}
+
+variable "user_subnet_cidr" {
+  type = string
+  description = "Subnet CIDR for prefix length calculation"
+  default = "10.30.0.0/24"
+}
+
+variable "user_virtual_ip" {
+    type = string
+    description = "User net Virtual IP address of the Cluster. The shared ip address with automatic failover"
+    default = "10.30.0.100"
 }

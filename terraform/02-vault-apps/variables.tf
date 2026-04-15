@@ -14,7 +14,12 @@ variable "authentik_bootstrap_password" {
   sensitive = true
 }
 
-variable "guacamole_admin_password" {
+variable "guacamole_admin_username" {
+  default = "guacadmin"
   type = string
+}
+
+variable "guacamole_admin_password" {
   sensitive = true
+  type = string
 }

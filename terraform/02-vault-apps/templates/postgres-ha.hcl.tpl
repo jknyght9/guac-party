@@ -8,11 +8,13 @@ job "postgres-ha" {
     }
 
     network {
-      port "patroni-http" {
+      port "patroni_http_mgmt" {
         static = 8008
+        host_network = "management"
       }
-      port "postgres-tcp" {
+      port "postgres_tcp_mgmt" {
         static = 5433
+        host_network = "management"
       }
     }
 
@@ -21,6 +23,10 @@ job "postgres-ha" {
     task "patroni" {
       driver = "raw_exec"
       user   = "postgres"
+      resources {
+        cpu = 6000
+        memory = 6144
+      }
 
       env {
         HOME = "/var/lib/postgresql"

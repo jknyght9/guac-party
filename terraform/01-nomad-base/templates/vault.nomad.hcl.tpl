@@ -3,29 +3,36 @@ job "vault" {
   type        = "service"
 
   group "vault" {
-    count = 3
+
+    count = ${node_count}
 
     constraint {
       operator = "distinct_hosts"
       value    = "true"
     }
-
     network {
       mode = "host"
-      port "api" {
+      port "api_mgmt" {
         static = 8200
+        host_network = "management"
       }
-      port "cluster" {
+      port "cluster_mgmt" {
         static = 8201
+        host_network = "management"
       }
     }
 
     task "vault" {
       driver = "docker"
 
+      resources {
+        cpu    = 1500
+        memory = 1024
+      }
+
       config {
         image = "hashicorp/vault:1.21.3"
-        ports = ["api", "cluster"]
+        network_mode = "host"
         
         cap_add = ["IPC_LOCK"] 
         
@@ -37,8 +44,8 @@ job "vault" {
       template {
         data = <<-EOF
           ui            = true
-          api_addr      = "http://{{ env "NOMAD_ADDR_api" }}"
-          cluster_addr  = "https://{{ env "NOMAD_ADDR_cluster" }}"
+          api_addr      = "http://{{ env "NOMAD_ADDR_api_mgmt" }}"
+          cluster_addr  = "https://{{ env "NOMAD_ADDR_cluster_mgmt" }}"
           
           # We keep this true because IPC_LOCK handles it, or you can disable it if testing
           disable_mlock = true 
@@ -59,7 +66,11 @@ job "vault" {
           }
 
           listener "tcp" {
-            address     = "0.0.0.0:8200"
+            address     = "{{ env "NOMAD_ADDR_api_mgmt" }}"
+            tls_disable = true
+          }
+          listener "tcp" {
+            address = "127.0.0.1:8200"
             tls_disable = true
           }
         EOF
@@ -73,14 +84,9 @@ job "vault" {
         VAULT_ADDR         = "http://127.0.0.1:8200"
       }
 
-      resources {
-        cpu    = 500
-        memory = 512
-      }
-
       service {
         name     = "vault"
-        port     = "api"
+        port     = "api_mgmt"
         provider = "nomad"
 
         tags = [
@@ -88,6 +94,7 @@ job "vault" {
           # Cluster level domain
           "traefik.http.routers.vault.rule=Host(`vault.${internal_domain}`)",
           "traefik.http.routers.vault.tls=true", # Ensure Traefik handles the certs
+          "traefik.http.routers.vault.entrypoints=websecure-mgmt-vip"
         ]
 
         # This health check is for Vault HA

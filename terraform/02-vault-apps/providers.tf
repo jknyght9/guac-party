@@ -15,3 +15,10 @@ provider "postgresql" {
   sslmode  = "disable"
   connect_timeout = 15
 }
+
+provider "guacamole" {
+  url = "https://guacamole.internal" #var.guacamole_url
+  username = var.guacamole_admin_username
+  password = var.guacamole_admin_password
+  disable_tls_verification = true
+}

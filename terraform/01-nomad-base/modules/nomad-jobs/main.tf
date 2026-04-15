@@ -6,24 +6,48 @@ terraform {
     }
   }
 }
-
+        
 resource "nomad_job" "traefik" {
     jobspec = templatefile("${path.root}/templates/traefik.nomad.hcl.tpl", {
-        internal_domain = var.internal_domain
+        internal_domain   = var.internal_domain
+        traefik_yaml      = templatefile("${path.root}/templates/traefik.yaml.tpl", {
+          user_virtual_ip = var.user_virtual_ip
+          mgmt_virtual_ip = var.mgmt_virtual_ip
+        })
+        dynamic_yaml     = templatefile("${path.root}/templates/dynamic.yaml.tpl", {
+          user_virtual_ip = var.user_virtual_ip
+          mgmt_virtual_ip = var.mgmt_virtual_ip
+        })
     })
 
     detach = false
 }
 
-resource "nomad_job" "unbound" {
-    jobspec = templatefile("${path.root}/templates/unbound.hcl.tpl", {
+resource "nomad_job" "unbound-mgmt" {
+    jobspec = templatefile("${path.root}/templates/unbound-mgmt.hcl.tpl", {
         # Here we do a double template file. The inner template passed our variables to the .conf for unbound
         # Then that is passed as a single variable to the nomad hcl.tpl
-        unbound_config = templatefile("${path.root}/templates/unbound.conf.tpl", {
+        unbound_config = templatefile("${path.root}/templates/unbound-mgmt.conf.tpl", {
+            internal_domain = var.internal_domain
+            node_records = var.unbound_node_records
+            mgmt_ip = var.mgmt_subnet_cidr
+            mgmt_gateway = var.mgmt_gateway
+            virtual_ip = var.mgmt_virtual_ip
+        })
+    })
+    detach = false
+}
+
+resource "nomad_job" "unbound-user" {
+    jobspec = templatefile("${path.root}/templates/unbound-user.hcl.tpl", {
+        # Here we do a double template file. The inner template passed our variables to the .conf for unbound
+        # Then that is passed as a single variable to the nomad hcl.tpl
+        unbound_config = templatefile("${path.root}/templates/unbound-user.conf.tpl", {
             internal_domain = var.internal_domain
             node_records = var.unbound_node_records
             mgmt_gateway = var.mgmt_gateway
-            virtual_ip = var.virtual_ip
+            user_ip = var.user_subnet_cidr
+            virtual_ip = var.user_virtual_ip
         })
     })
     detach = false
@@ -33,6 +57,7 @@ resource "nomad_job" "vault" {
     jobspec = templatefile("${path.root}/templates/vault.nomad.hcl.tpl", {
         # Only inform vault of the nomad records, avoids repeated addresses
         node_records   = [ for r in var.unbound_node_records : r ]
+        node_count = length(var.unbound_node_records)
         internal_domain = var.internal_domain
     })
 
