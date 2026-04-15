@@ -1,0 +1,28 @@
+proxmox_first_node_name = "saruman"
+proxmox_api_url    = "https://192.168.100.187:8006/api2/json"
+proxmox_api_token  = "terraform@pve!terraform=[secret-here]"
+
+proxmox_nodes = {"saruman" = { address = "192.168.100.187", nomad_ip = "192.168.100.87" }, "sauron" = { address = "192.168.100.188", nomad_ip = "192.168.100.88" }, "smeagol" = { address = "192.168.100.189", nomad_ip = "192.168.100.89" }}
+
+ssh_public_key = "ssh-ed22519 [pubkey here] [key comment here]"
+
+mgmt_bridge      = "vmbr0"
+mgmt_gateway     = "192.168.100.1"
+mgmt_subnet_cidr = "192.168.100.0/24"
+mgmt_virtual_ip  = "192.168.100.100"
+
+sdn_zone_name   = "cybercon"
+sdn_vnet_name   = "cybernet"
+sdn_subnet_cidr = "10.75.0.0/24"
+sdn_gateway     = "10.75.0.1"
+
+internal_domain = "internal"
+
+authentik_bootstrap_email = "email@example.com"
+authentik_bootstrap_password = "secure-password"
+
+guacamole_admin_password = "secure-password"
+
+# Hondo was helping me administer the range, this is 
+# The password for his Guacamole admin account
+hondo_passwd = "passowrd-here"

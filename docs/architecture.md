@@ -1,5 +1,9 @@
 # Guac-Party Architecture
 
+# NOTICE
+This section of documentation is largely dated, but kept for archival purposes. It can be a good starting point,
+but much of it is no longer in line with the current architecture
+
 HA Apache Guacamole on Proxmox via Nomad.
 
 ## Overview

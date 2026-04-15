@@ -1,0 +1,8 @@
+# This an example file for defining users to be used in layer 03
+# Each user will have their own cyber range built, accounts created in 
+# Authentik and Guacamole, and have their range connections linked to their accounts
+workshop_users = {
+  "demo01" = { password = "password123" }
+  "demo02" = { password = "password123" }
+  "demo03" = { password = "password123" }
+}
